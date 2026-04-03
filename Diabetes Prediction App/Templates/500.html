@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - DiaPredict{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 80px 20px;">
+    <div style="font-size: 120px; margin-bottom: 20px;">⚠️</div>
+    <h1 style="font-size: 32px; color: #333; margin-bottom: 10px;">500 - Server Error</h1>
+    <p style="color: #666; font-size: 16px; margin-bottom: 30px;">Something went wrong on our end. Please try again later.</p>
+    <a href="{{ url_for('dashboard') }}" style="display: inline-block; background: #667eea; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600;">Go to Dashboard</a>
+</div>
+{% endblock %}
