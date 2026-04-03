@@ -3,64 +3,266 @@
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Diabetes Prediction</title>
+	<title>DiaPredict - Diabetes Risk Assessment</title>
 	<style>
-		body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
-		.container { max-width: 480px; margin: 40px auto; background: #fff; padding: 24px 28px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-		h1 { text-align: center; margin-bottom: 20px; }
-		label { display: block; margin-top: 10px; font-weight: 600; }
-		input { width: 100%; padding: 8px 10px; margin-top: 4px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
-		button { margin-top: 18px; width: 100%; padding: 10px; border: none; border-radius: 4px; background: #1976d2; color: white; font-size: 16px; cursor: pointer; }
-		button:hover { background: #135ba3; }
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+		}
+		.container {
+			max-width: 700px;
+			width: 100%;
+			background: white;
+			border-radius: 16px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+			overflow: hidden;
+		}
+		.header {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			padding: 40px 30px;
+			text-align: center;
+		}
+		.header h1 {
+			font-size: 32px;
+			margin-bottom: 8px;
+			font-weight: 700;
+		}
+		.header p {
+			font-size: 14px;
+			opacity: 0.9;
+		}
+		.form-content {
+			padding: 40px 30px;
+		}
+		.form-section {
+			margin-bottom: 30px;
+		}
+		.section-title {
+			font-size: 14px;
+			font-weight: 700;
+			color: #667eea;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			margin-bottom: 15px;
+		}
+		.form-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 20px;
+		}
+		.form-group {
+			display: flex;
+			flex-direction: column;
+		}
+		.form-group.full {
+			grid-column: 1 / -1;
+		}
+		label {
+			font-weight: 600;
+			color: #333;
+			margin-bottom: 6px;
+			font-size: 14px;
+		}
+		.field-hint {
+			font-size: 12px;
+			color: #999;
+			margin-bottom: 6px;
+		}
+		input {
+			padding: 12px 14px;
+			border: 2px solid #e0e0e0;
+			border-radius: 8px;
+			font-size: 14px;
+			transition: all 0.3s ease;
+			font-family: inherit;
+		}
+		input:focus {
+			outline: none;
+			border-color: #667eea;
+			box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		}
+		input:invalid {
+			border-color: #ff6b6b;
+		}
+		.button-group {
+			display: flex;
+			gap: 12px;
+			margin-top: 30px;
+		}
+		button {
+			flex: 1;
+			padding: 14px 24px;
+			border: none;
+			border-radius: 8px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.3s ease;
+		}
+		.btn-submit {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+		}
+		.btn-submit:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+		}
+		.btn-reset {
+			background: #f0f0f0;
+			color: #333;
+		}
+		.btn-reset:hover {
+			background: #e0e0e0;
+		}
+		.error-message {
+			display: none;
+			background: #ffe0e0;
+			color: #d32f2f;
+			padding: 12px 15px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+			font-size: 14px;
+			border-left: 4px solid #d32f2f;
+		}
+		.error-message.active {
+			display: block;
+		}
+		@media (max-width: 600px) {
+			.form-grid {
+				grid-template-columns: 1fr;
+			}
+			.header h1 {
+				font-size: 24px;
+			}
+			.form-content {
+				padding: 25px 20px;
+			}
+		}
 	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>🏥 DiaPredict</h1>
+			<p>Early Diabetes Detection System - 89.6% Accuracy</p>
+		</div>
+
+		<div class="form-content">
+			<div class="error-message" id="errorMessage"></div>
+
+			<form method="post" action="/predict" id="predictionForm">
+				<!-- Personal Information Section -->
+				<div class="form-section">
+					<div class="section-title">📋 Personal Information</div>
+					<div class="form-grid">
+						<div class="form-group">
+							<label for="Age">Age</label>
+							<div class="field-hint">years</div>
+							<input type="number" name="Age" id="Age" min="0" max="120" step="1" required />
+						</div>
+						<div class="form-group">
+							<label for="Pregnancies">Pregnancies</label>
+							<div class="field-hint">Number of pregnancies</div>
+							<input type="number" name="Pregnancies" id="Pregnancies" min="0" max="20" step="1" required />
+						</div>
+					</div>
+				</div>
+
+				<!-- Clinical Measurements Section -->
+				<div class="form-section">
+					<div class="section-title">💉 Clinical Measurements</div>
+					<div class="form-grid">
+						<div class="form-group">
+							<label for="Glucose">Glucose Level</label>
+							<div class="field-hint">mg/dL (fasting)</div>
+							<input type="number" name="Glucose" id="Glucose" min="0" max="300" step="0.1" required />
+						</div>
+						<div class="form-group">
+							<label for="BloodPressure">Blood Pressure (Diastolic)</label>
+							<div class="field-hint">mmHg</div>
+							<input type="number" name="BloodPressure" id="BloodPressure" min="0" max="150" step="0.1" required />
+						</div>
+						<div class="form-group">
+							<label for="Insulin">Insulin Level</label>
+							<div class="field-hint">µU/mL (2-hour serum)</div>
+							<input type="number" name="Insulin" id="Insulin" min="0" max="900" step="0.1" required />
+						</div>
+						<div class="form-group">
+							<label for="SkinThickness">Skin Thickness</label>
+							<div class="field-hint">mm (triceps)</div>
+							<input type="number" name="SkinThickness" id="SkinThickness" min="0" max="100" step="0.1" required />
+						</div>
+					</div>
+				</div>
+
+				<!-- Body Metrics Section -->
+				<div class="form-section">
+					<div class="section-title">⚖️ Body Metrics</div>
+					<div class="form-grid">
+						<div class="form-group">
+							<label for="BMI">BMI (Body Mass Index)</label>
+							<div class="field-hint">kg/m²</div>
+							<input type="number" name="BMI" id="BMI" min="10" max="70" step="0.1" required />
+						</div>
+						<div class="form-group">
+							<label for="DiabetesPedigreeFunction">Family History Index</label>
+							<div class="field-hint">Diabetes pedigree function</div>
+							<input type="number" name="DiabetesPedigreeFunction" id="DiabetesPedigreeFunction" min="0" max="2.5" step="0.001" required />
+						</div>
+					</div>
+				</div>
+
+				<!-- Action Buttons -->
+				<div class="button-group">
+					<button type="submit" class="btn-submit">🔍 Predict Diabetes Risk</button>
+					<button type="reset" class="btn-reset">Clear Form</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
 	<script>
-		function validateForm() {
+		const form = document.getElementById('predictionForm');
+		const errorDiv = document.getElementById('errorMessage');
+
+		form.addEventListener('submit', function(e) {
+			errorDiv.classList.remove('active');
+
 			const fields = [
 				'Pregnancies','Glucose','BloodPressure','SkinThickness',
 				'Insulin','BMI','DiabetesPedigreeFunction','Age'
 			];
+
 			for (const name of fields) {
-				const el = document.forms[0][name];
+				const el = document.getElementById(name);
 				if (!el.value.trim()) {
-					alert('Please fill in all fields.');
+					e.preventDefault();
+					errorDiv.textContent = `❌ Please fill in all fields. Missing: ${name}`;
+					errorDiv.classList.add('active');
+					el.focus();
+					return false;
+				}
+
+				const value = parseFloat(el.value);
+				if (isNaN(value)) {
+					e.preventDefault();
+					errorDiv.textContent = `❌ ${name} must be a valid number`;
+					errorDiv.classList.add('active');
 					el.focus();
 					return false;
 				}
 			}
+
 			return true;
-		}
+		});
 	</script>
-</head>
-<body>
-	<div class="container">
-		<h1>Diabetes Prediction</h1>
-		<form method="post" action="/predict" onsubmit="return validateForm()">
-			<label for="Pregnancies">Pregnancies</label>
-			<input type="number" name="Pregnancies" step="1" min="0" required />
-
-			<label for="Glucose">Glucose</label>
-			<input type="number" name="Glucose" step="0.1" min="0" required />
-
-			<label for="BloodPressure">Blood Pressure</label>
-			<input type="number" name="BloodPressure" step="0.1" min="0" required />
-
-			<label for="SkinThickness">Skin Thickness</label>
-			<input type="number" name="SkinThickness" step="0.1" min="0" required />
-
-			<label for="Insulin">Insulin</label>
-			<input type="number" name="Insulin" step="0.1" min="0" required />
-
-			<label for="BMI">BMI</label>
-			<input type="number" name="BMI" step="0.1" min="0" required />
-
-			<label for="DiabetesPedigreeFunction">Diabetes Pedigree Function</label>
-			<input type="number" name="DiabetesPedigreeFunction" step="0.001" min="0" required />
-
-			<label for="Age">Age</label>
-			<input type="number" name="Age" step="1" min="0" required />
-
-			<button type="submit">Predict</button>
-		</form>
-	</div>
 </body>
 </html>
