@@ -1,0 +1,319 @@
+<nav class="navbar">
+    <div class="navbar-container">
+        <div class="navbar-brand">
+            <a href="{{ url_for('dashboard') }}" class="brand-link">
+                <span class="brand-icon">🏥</span>
+                <span class="brand-name">DiaPredict</span>
+            </a>
+        </div>
+
+        <button class="navbar-toggle" id="navbarToggle" onclick="toggleNavbar()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <div class="navbar-menu" id="navbarMenu">
+            <div class="navbar-items">
+                <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <span class="nav-icon">📊</span> Dashboard
+                </a>
+                <a href="{{ url_for('predict') }}" class="nav-item {% if request.endpoint == 'predict' %}active{% endif %}">
+                    <span class="nav-icon">🔍</span> New Test
+                </a>
+                <a href="{{ url_for('predictions_history') }}" class="nav-item {% if request.endpoint == 'predictions_history' %}active{% endif %}">
+                    <span class="nav-icon">📋</span> History
+                </a>
+            </div>
+
+            <div class="navbar-user">
+                <div class="user-menu">
+                    <button class="user-button" onclick="toggleUserMenu()">
+                        <span class="user-icon">👤</span>
+                        <span class="user-name">{{ current_user.username }}</span>
+                        <span class="dropdown-icon">▼</span>
+                    </button>
+
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-item">
+                            <span>📧 {{ current_user.email }}</span>
+                        </div>
+                        <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;">
+                        <a href="{{ url_for('logout') }}" class="dropdown-item logout-item">
+                            🚪 Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script>
+    function toggleNavbar() {
+        const menu = document.getElementById('navbarMenu');
+        menu.classList.toggle('active');
+    }
+
+    function toggleUserMenu() {
+        const dropdown = document.getElementById('userDropdown');
+        dropdown.classList.toggle('active');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const userMenu = document.querySelector('.user-menu');
+        if (!userMenu.contains(event.target)) {
+            document.getElementById('userDropdown').classList.remove('active');
+        }
+    });
+</script>
+
+<style>
+    .navbar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .navbar-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        height: 70px;
+    }
+
+    .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .brand-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: white;
+        font-weight: 700;
+        font-size: 20px;
+        transition: opacity 0.3s;
+    }
+
+    .brand-link:hover {
+        opacity: 0.8;
+    }
+
+    .brand-icon {
+        font-size: 28px;
+    }
+
+    .brand-name {
+        display: none;
+    }
+
+    .navbar-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .navbar-toggle span {
+        width: 25px;
+        height: 3px;
+        background: white;
+        transition: 0.3s;
+    }
+
+    .navbar-menu {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex: 1;
+        margin-left: 40px;
+        gap: 30px;
+    }
+
+    .navbar-items {
+        display: flex;
+        gap: 20px;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: white;
+        text-decoration: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        transition: all 0.3s;
+    }
+
+    .nav-item:hover, .nav-item.active {
+        background: rgba(255,255,255,0.2);
+    }
+
+    .nav-icon {
+        font-size: 18px;
+    }
+
+    .navbar-user {
+        display: flex;
+        align-items: center;
+    }
+
+    .user-menu {
+        position: relative;
+    }
+
+    .user-button {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .user-button:hover {
+        background: rgba(255,255,255,0.25);
+    }
+
+    .user-icon {
+        font-size: 18px;
+    }
+
+    .dropdown-icon {
+        font-size: 12px;
+    }
+
+    .user-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        min-width: 200px;
+        margin-top: 8px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s;
+        z-index: 1001;
+    }
+
+    .user-dropdown.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .dropdown-item {
+        padding: 12px 16px;
+        color: #333;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.3s;
+    }
+
+    .dropdown-item:hover {
+        background: #f5f5f5;
+    }
+
+    .logout-item {
+        color: #d32f2f;
+        font-weight: 600;
+    }
+
+    .logout-item:hover {
+        background: #ffebee;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+        .navbar-toggle {
+            display: flex;
+        }
+
+        .brand-name {
+            display: inline;
+        }
+
+        .navbar-menu {
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: rgba(102, 126, 234, 0.95);
+            flex-direction: column;
+            gap: 0;
+            margin-left: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s;
+        }
+
+        .navbar-menu.active {
+            max-height: 400px;
+        }
+
+        .navbar-items {
+            flex-direction: column;
+            width: 100%;
+            gap: 0;
+        }
+
+        .nav-item {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 0;
+        }
+
+        .navbar-user {
+            width: 100%;
+            padding: 10px 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .user-dropdown {
+            position: static;
+            background: rgba(255,255,255,0.1);
+            box-shadow: none;
+            border-radius: 0;
+            margin-top: 0;
+            opacity: 1;
+            visibility: visible;
+            transform: none;
+        }
+
+        .dropdown-item {
+            color: white;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+    }
+</style>

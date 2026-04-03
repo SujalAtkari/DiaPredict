@@ -13,3 +13,8 @@ catboost
 jupyter
 ipykernel
 flask
+pymongo==4.6.0
+python-dotenv==1.0.0
+email-validator==2.1.0
+Flask-Login==0.6.3
+secure==0.3.0
