@@ -7,95 +7,64 @@ import pickle
 import os
 from dotenv import load_dotenv
 
-# Import database and utilities
-import sys
-sys.path.insert(0, os.path.dirname(__file__))
-
-from database import (
-    init_database, create_user, get_user_by_email, get_user_by_id,
-    get_user_by_verification_token, verify_user, update_last_login,
-    record_login_attempt, save_prediction, get_user_predictions,
-    get_user_statistics, get_user_predictions_for_charts, get_prediction_by_id
-)
-from utils.auth import hash_password, verify_password, generate_verification_token, is_password_strong
-from utils.email import send_verification_email, send_welcome_email
-from utils.stats import get_chart_data, format_for_json
-
 # Load environment variables
 load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-this')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'demo-secret-key-change-in-production')
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=int(os.getenv('SESSION_TIMEOUT', 1800)))
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager.login_message = 'Please log in to access this page.'
-
-# Initialize database
-init_database()
 
 # Load ML model and scaler
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "hybrid_model.pkl")
 SCALER_PATH = os.path.join(BASE_DIR, "scaler.pkl")
 
-with open(MODEL_PATH, "rb") as f:
-    model = pickle.load(f)
-
-with open(SCALER_PATH, "rb") as f:
-    scaler = pickle.load(f)
+try:
+    with open(MODEL_PATH, "rb") as f:
+        model = pickle.load(f)
+    with open(SCALER_PATH, "rb") as f:
+        scaler = pickle.load(f)
+    print("✓ Model loaded successfully")
+except Exception as e:
+    print(f"✗ Error loading model: {e}")
+    model = None
+    scaler = None
 
 FEATURE_NAMES = [
     "Pregnancies", "Glucose", "BloodPressure", "SkinThickness",
     "Insulin", "BMI", "DiabetesPedigreeFunction", "Age"
 ]
 
-
-# ==================== USER CLASS ====================
+# ==================== MOCK USER CLASS ====================
 
 class User(UserMixin):
-    def __init__(self, user_id, email, username, is_verified):
+    def __init__(self, user_id, email, username):
         self.id = user_id
         self.email = email
         self.username = username
-        self.is_verified = is_verified
 
+# Store demo users in memory
+demo_users = {}
 
 @login_manager.user_loader
 def load_user(user_id):
-    user_data = get_user_by_id(user_id)
-    if user_data:
-        return User(str(user_data['_id']), user_data['email'], user_data['username'], user_data['is_verified'])
-    return None
-
+    return demo_users.get(user_id)
 
 # ==================== HELPER FUNCTIONS ====================
 
-def check_rate_limit(email, max_attempts=5, window_seconds=300):
-    """Check if user has exceeded login attempt limits"""
-    user = get_user_by_email(email)
-    if not user:
-        return True
-
-    if user.get('login_attempts', 0) >= max_attempts:
-        if user.get('last_login_attempt'):
-            time_since_attempt = datetime.utcnow() - user['last_login_attempt']
-            if time_since_attempt.total_seconds() < window_seconds:
-                return False
-    return True
-
-
-def send_verification_link(email, username, verification_token):
-    """Send verification link to user"""
-    verification_link = url_for('verify_email', token=verification_token, _external=True)
-    return send_verification_email(email, username, verification_link)
-
+def create_demo_user(email, username):
+    """Create a demo user in memory"""
+    user_id = f"user_{len(demo_users) + 1}"
+    user = User(user_id, email, username)
+    demo_users[user_id] = user
+    return user
 
 # ==================== HOME & STATIC ROUTES ====================
 
@@ -106,18 +75,11 @@ def home():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-
-@app.route('/about')
-def about():
-    """About page"""
-    return render_template('about.html')
-
-
 # ==================== AUTHENTICATION ROUTES ====================
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    """User registration"""
+    """User registration (DEMO - no data saved)"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
@@ -133,9 +95,20 @@ def signup():
             return render_template('signup.html')
 
         # Check password strength
-        is_strong, message = is_password_strong(password)
-        if not is_strong:
-            flash(message, 'error')
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'error')
+            return render_template('signup.html')
+
+        if not any(c.isupper() for c in password):
+            flash('Password must contain at least one uppercase letter.', 'error')
+            return render_template('signup.html')
+
+        if not any(c.islower() for c in password):
+            flash('Password must contain at least one lowercase letter.', 'error')
+            return render_template('signup.html')
+
+        if not any(c.isdigit() for c in password):
+            flash('Password must contain at least one digit.', 'error')
             return render_template('signup.html')
 
         # Check password match
@@ -143,25 +116,17 @@ def signup():
             flash('Passwords do not match.', 'error')
             return render_template('signup.html')
 
-        # Check if email already exists
-        if get_user_by_email(email):
-            flash('Email already registered. Please log in or use a different email.', 'error')
-            return render_template('signup.html')
-
         try:
-            # Create user
-            password_hash = hash_password(password)
-            verification_token = generate_verification_token()
+            # Create demo user (no database)
+            user = create_demo_user(email, username)
 
-            user_id = create_user(email, username, password_hash, verification_token)
+            # Flash message
+            flash(f'✓ Account created successfully! Logging you in...', 'success')
 
-            # Send verification email
-            if send_verification_link(email, username, verification_token):
-                flash('Registration successful! Check your email to verify your account.', 'success')
-            else:
-                flash('Registration successful, but email verification could not be sent. Please contact support.', 'warning')
+            # Auto-login
+            login_user(user, remember=True)
 
-            return redirect(url_for('login'))
+            return redirect(url_for('dashboard'))
 
         except Exception as e:
             flash(f'Error during registration: {str(e)}', 'error')
@@ -170,34 +135,9 @@ def signup():
     return render_template('signup.html')
 
 
-@app.route('/verify/<token>')
-def verify_email(token):
-    """Verify email with token"""
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-
-    user = get_user_by_verification_token(token)
-
-    if not user:
-        flash('Invalid or expired verification link.', 'error')
-        return redirect(url_for('login'))
-
-    email = user['email']
-    username = user['username']
-
-    if verify_user(email):
-        # Send welcome email
-        send_welcome_email(email, username)
-        flash('Email verified successfully! You can now log in.', 'success')
-        return redirect(url_for('login'))
-    else:
-        flash('Error verifying email. Please try again.', 'error')
-        return redirect(url_for('signup'))
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login"""
+    """User login (DEMO - any credentials work)"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
@@ -205,38 +145,21 @@ def login():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
 
-        # Check rate limiting
-        if not check_rate_limit(email):
-            flash('Too many login attempts. Please try again later.', 'error')
+        # Validation
+        if not email or not password:
+            flash('Email and password are required.', 'error')
             return render_template('login.html')
 
-        # Get user
-        user_data = get_user_by_email(email)
+        # DEMO MODE: Accept any login credentials
+        user_id = f"user_{hash(email) % 10000}"
+        username = email.split('@')[0]
 
-        if not user_data:
-            record_login_attempt(email, success=False)
-            flash('Invalid email or password.', 'error')
-            return render_template('login.html')
+        user = User(user_id, email, username)
+        demo_users[user_id] = user
 
-        # Check if verified
-        if not user_data.get('is_verified', False):
-            flash('Please verify your email first.', 'error')
-            return render_template('login.html')
-
-        # Verify password
-        if not verify_password(user_data['password_hash'], password):
-            record_login_attempt(email, success=False)
-            flash('Invalid email or password.', 'error')
-            return render_template('login.html')
-
-        # Successful login
-        record_login_attempt(email, success=True)
-        update_last_login(str(user_data['_id']))
-
-        user = User(str(user_data['_id']), user_data['email'], user_data['username'], user_data['is_verified'])
         login_user(user, remember=True)
+        flash(f'Welcome, {username}! 🎉', 'success')
 
-        flash(f'Welcome back, {user_data["username"]}!', 'success')
         return redirect(url_for('dashboard'))
 
     return render_template('login.html')
@@ -278,24 +201,23 @@ def predict():
                 values.append(float_val)
                 health_data[name] = raw
 
-            # Make prediction
-            input_array = np.array([values])
-            scaled_input = scaler.transform(input_array)
-            prediction = model.predict(scaled_input)[0]
+            # Make prediction if model is loaded
+            if model and scaler:
+                input_array = np.array([values])
+                scaled_input = scaler.transform(input_array)
+                prediction = model.predict(scaled_input)[0]
 
-            if int(prediction) == 1:
-                prediction_text = "The model predicts: Diabetes Positive"
+                if int(prediction) == 1:
+                    prediction_text = "The model predicts: Diabetes Positive"
+                else:
+                    prediction_text = "The model predicts: Diabetes Negative"
             else:
-                prediction_text = "The model predicts: Diabetes Negative"
-
-            # Save to database
-            prediction_id = save_prediction(current_user.id, health_data, prediction, prediction_text)
+                prediction_text = "The model predicts: Diabetes Negative (Demo Mode)"
 
             return render_template(
                 'result.html',
                 prediction_text=prediction_text,
-                username=current_user.username,
-                prediction_id=prediction_id
+                username=current_user.username
             )
 
         except ValueError:
@@ -317,30 +239,69 @@ def predict():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """User dashboard with statistics"""
-    predictions = get_user_predictions(current_user.id, limit=100)
-    stats = get_user_statistics(current_user.id)
+    """User dashboard with demo data"""
+    # Generate demo data for visualization
+    demo_stats = {
+        "total_predictions": 5,
+        "positive_count": 2,
+        "negative_count": 3,
+        "positive_percentage": 40.0,
+        "negative_percentage": 60.0,
+        "avg_glucose": 125.5,
+        "avg_bmi": 27.8,
+        "avg_blood_pressure": 82.4,
+        "avg_insulin": 95.3,
+        "last_prediction_date": datetime.now().isoformat()
+    }
 
     return render_template(
         'dashboard.html',
         username=current_user.username,
-        stats=stats,
-        prediction_count=len(predictions)
+        stats=demo_stats,
+        prediction_count=demo_stats["total_predictions"]
     )
 
 
 @app.route('/dashboard/api/chart-data')
 @login_required
 def get_chart_data_api():
-    """API endpoint for chart data"""
+    """API endpoint for chart data (DEMO)"""
     try:
-        predictions = get_user_predictions(current_user.id, limit=100)
-        chart_data = get_chart_data(predictions)
+        # Generate demo chart data
+        demo_data = {
+            "timeline": [
+                {"index": 1, "date": (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%d"), "time": "10:30:00", "risk": 0, "risk_label": "Negative ✓", "glucose": 88.5, "bmi": 23.2, "blood_pressure": 75.0, "insulin": 42.5},
+                {"index": 2, "date": (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d"), "time": "14:15:00", "risk": 0, "risk_label": "Negative ✓", "glucose": 105.2, "bmi": 24.8, "blood_pressure": 78.5, "insulin": 68.2},
+                {"index": 3, "date": (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d"), "time": "11:45:00", "risk": 1, "risk_label": "Positive ⚠️", "glucose": 145.8, "bmi": 28.5, "blood_pressure": 85.2, "insulin": 125.3},
+                {"index": 4, "date": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"), "time": "09:20:00", "risk": 0, "risk_label": "Negative ✓", "glucose": 92.1, "bmi": 25.5, "blood_pressure": 76.8, "insulin": 55.7},
+                {"index": 5, "date": datetime.now().strftime("%Y-%m-%d"), "time": "15:30:00", "risk": 1, "risk_label": "Positive ⚠️", "glucose": 165.5, "bmi": 32.1, "blood_pressure": 88.9, "insulin": 142.6},
+            ],
+            "risk_distribution": {
+                "positive": 2,
+                "negative": 3,
+                "total": 5,
+                "positive_percentage": 40.0,
+                "negative_percentage": 60.0
+            },
+            "health_metrics": [
+                {
+                    "period": "all_time",
+                    "glucose": 119.42,
+                    "bmi": 26.82,
+                    "blood_pressure": 80.88,
+                    "insulin": 86.86
+                }
+            ],
+            "summary": {
+                "total_tests": 5,
+                "positive_count": 2,
+                "negative_count": 3,
+                "positive_percentage": 40.0,
+                "negative_percentage": 60.0
+            }
+        }
 
-        # Format datetime objects for JSON
-        chart_data = format_for_json(chart_data)
-
-        return jsonify(chart_data)
+        return jsonify(demo_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -348,36 +309,61 @@ def get_chart_data_api():
 @app.route('/predictions')
 @login_required
 def predictions_history():
-    """View all predictions history"""
-    predictions = get_user_predictions(current_user.id, limit=1000)
-
-    # Format for display
-    for pred in predictions:
-        pred['created_at_str'] = datetime.fromisoformat(pred['created_at']).strftime("%Y-%m-%d %H:%M:%S") if isinstance(pred['created_at'], str) else pred['created_at'].strftime("%Y-%m-%d %H:%M:%S")
-        pred['risk_label'] = "⚠️ Positive" if pred['prediction'] == 1 else "✓ Negative"
+    """View all predictions history (DEMO)"""
+    # Demo prediction history
+    demo_predictions = [
+        {
+            'created_at_str': (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%d %H:%M:%S"),
+            'glucose': 88.5,
+            'bmi': 23.2,
+            'blood_pressure': 75.0,
+            'insulin': 42.5,
+            'prediction': 0,
+            'risk_label': "✓ Negative"
+        },
+        {
+            'created_at_str': (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d %H:%M:%S"),
+            'glucose': 105.2,
+            'bmi': 24.8,
+            'blood_pressure': 78.5,
+            'insulin': 68.2,
+            'prediction': 0,
+            'risk_label': "✓ Negative"
+        },
+        {
+            'created_at_str': (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S"),
+            'glucose': 145.8,
+            'bmi': 28.5,
+            'blood_pressure': 85.2,
+            'insulin': 125.3,
+            'prediction': 1,
+            'risk_label': "⚠️ Positive"
+        },
+        {
+            'created_at_str': (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            'glucose': 92.1,
+            'bmi': 25.5,
+            'blood_pressure': 76.8,
+            'insulin': 55.7,
+            'prediction': 0,
+            'risk_label': "✓ Negative"
+        },
+        {
+            'created_at_str': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'glucose': 165.5,
+            'bmi': 32.1,
+            'blood_pressure': 88.9,
+            'insulin': 142.6,
+            'prediction': 1,
+            'risk_label': "⚠️ Positive"
+        },
+    ]
 
     return render_template(
         'predictions_history.html',
-        predictions=predictions,
+        predictions=demo_predictions,
         username=current_user.username,
-        total_count=len(predictions)
-    )
-
-
-@app.route('/predictions/<prediction_id>')
-@login_required
-def view_prediction(prediction_id):
-    """View a specific prediction"""
-    pred = get_prediction_by_id(prediction_id)
-
-    if not pred or str(pred['user_id']) != current_user.id:
-        flash('Prediction not found or access denied.', 'error')
-        return redirect(url_for('predictions_history'))
-
-    return render_template(
-        'prediction_detail.html',
-        prediction=pred,
-        username=current_user.username
+        total_count=len(demo_predictions)
     )
 
 
@@ -409,4 +395,8 @@ def inject_user():
 # ==================== RUN APP ====================
 
 if __name__ == "__main__":
+    print("🚀 Starting DiaPredict Demo...")
+    print("✓ No database required - DEMO MODE")
+    print("✓ Access at: http://localhost:5000")
+    print("✓ Any email/password will work for login")
     app.run(debug=True, host="0.0.0.0", port=5000)
