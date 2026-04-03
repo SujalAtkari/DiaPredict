@@ -2,7 +2,7 @@
     <div class="navbar-container">
         <div class="navbar-brand">
             <a href="{{ url_for('dashboard') }}" class="brand-link">
-                <span class="brand-icon">🏥</span>
+                <i class="fas fa-hospital"></i>
                 <span class="brand-name">DiaPredict</span>
             </a>
         </div>
@@ -16,31 +16,31 @@
         <div class="navbar-menu" id="navbarMenu">
             <div class="navbar-items">
                 <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
-                    <span class="nav-icon">📊</span> Dashboard
+                    <i class="fas fa-chart-pie"></i> Dashboard
                 </a>
                 <a href="{{ url_for('predict') }}" class="nav-item {% if request.endpoint == 'predict' %}active{% endif %}">
-                    <span class="nav-icon">🔍</span> New Test
+                    <i class="fas fa-search"></i> New Test
                 </a>
                 <a href="{{ url_for('predictions_history') }}" class="nav-item {% if request.endpoint == 'predictions_history' %}active{% endif %}">
-                    <span class="nav-icon">📋</span> History
+                    <i class="fas fa-clipboard-list"></i> History
                 </a>
             </div>
 
             <div class="navbar-user">
                 <div class="user-menu">
                     <button class="user-button" onclick="toggleUserMenu()">
-                        <span class="user-icon">👤</span>
+                        <i class="fas fa-user-circle"></i>
                         <span class="user-name">{{ current_user.username }}</span>
-                        <span class="dropdown-icon">▼</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
                     </button>
 
                     <div class="user-dropdown" id="userDropdown">
                         <div class="dropdown-item">
-                            <span>📧 {{ current_user.email }}</span>
+                            <i class="fas fa-envelope"></i> {{ current_user.email }}
                         </div>
                         <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;">
                         <a href="{{ url_for('logout') }}" class="dropdown-item logout-item">
-                            🚪 Logout
+                            <i class="fas fa-sign-out-alt"></i> Logout
                         </a>
                     </div>
                 </div>
@@ -60,7 +60,6 @@
         dropdown.classList.toggle('active');
     }
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
         const userMenu = document.querySelector('.user-menu');
         if (!userMenu.contains(event.target)) {
@@ -111,7 +110,7 @@
         opacity: 0.8;
     }
 
-    .brand-icon {
+    .brand-link i {
         font-size: 28px;
     }
 
@@ -166,7 +165,7 @@
         background: rgba(255,255,255,0.2);
     }
 
-    .nav-icon {
+    .nav-item i {
         font-size: 18px;
     }
 
@@ -198,7 +197,7 @@
         background: rgba(255,255,255,0.25);
     }
 
-    .user-icon {
+    .user-button i {
         font-size: 18px;
     }
 
@@ -242,6 +241,10 @@
         background: #f5f5f5;
     }
 
+    .dropdown-item i {
+        width: 18px;
+    }
+
     .logout-item {
         color: #d32f2f;
         font-weight: 600;
@@ -251,7 +254,6 @@
         background: #ffebee;
     }
 
-    /* Mobile */
     @media (max-width: 768px) {
         .navbar-toggle {
             display: flex;

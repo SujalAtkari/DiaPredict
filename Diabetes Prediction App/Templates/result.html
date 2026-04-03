@@ -153,7 +153,7 @@
 <div class="result-page">
 	<div class="result-container">
 		<div class="result-header">
-			<h1>🏥 DiaPredict</h1>
+			<h1><i class="fas fa-hospital"></i> DiaPredict</h1>
 			<p>Prediction Result</p>
 		</div>
 
@@ -165,14 +165,14 @@
 			</div>
 
 			<div class="disclaimer">
-				<strong>📋 Important:</strong> This prediction is for informational purposes only. Always consult with a healthcare professional for confirmed diagnosis.
+				<strong><i class="fas fa-clipboard-list"></i> Important:</strong> This prediction is for informational purposes only. Always consult with a healthcare professional for confirmed diagnosis.
 			</div>
 
 			<div id="advice"></div>
 
 			<div class="action-group">
-				<a href="{{ url_for('predict') }}" class="btn-back">← Take Another Test</a>
-				<a href="{{ url_for('dashboard') }}" class="btn-dashboard">📊 View Dashboard</a>
+				<a href="{{ url_for('predict') }}" class="btn-back"><i class="fas fa-redo"></i> Take Another Test</a>
+				<a href="{{ url_for('dashboard') }}" class="btn-dashboard"><i class="fas fa-chart-pie"></i> View Dashboard</a>
 			</div>
 		</div>
 	</div>
@@ -192,21 +192,21 @@
 		const type = extractPrediction(text);
 		if (type === 'positive') {
 			return {
-				icon: '⚠️',
+				icon: '<i class="fas fa-exclamation-triangle" style="color: #ff6b6b;"></i>',
 				title: 'Diabetes Risk Detected',
 				message: 'The model predicts a positive diabetes risk.',
 				advice: 'Please consult with a healthcare professional for further evaluation and medical advice. Early intervention can help manage your health effectively.'
 			};
 		} else if (type === 'negative') {
 			return {
-				icon: '✅',
+				icon: '<i class="fas fa-check-circle" style="color: #4ade80;"></i>',
 				title: 'Low Diabetes Risk',
 				message: 'The model predicts a negative diabetes risk.',
 				advice: 'Maintain a healthy lifestyle and regular health checkups. Continue with balanced diet, regular exercise, and periodic screening.'
 			};
 		} else {
 			return {
-				icon: '❌',
+				icon: '<i class="fas fa-times-circle" style="color: #f59e0b;"></i>',
 				title: 'Error in Prediction',
 				message: text,
 				advice: 'Please try again or contact support.'
@@ -219,7 +219,7 @@
 		const details = getPredictionDetails(predictionText);
 		const type = extractPrediction(predictionText);
 
-		document.getElementById('resultIcon').textContent = details.icon;
+		document.getElementById('resultIcon').innerHTML = details.icon;
 		document.getElementById('resultTitle').textContent = details.title;
 		document.getElementById('resultMessage').textContent = details.message;
 		document.getElementById('advice').textContent = details.advice;

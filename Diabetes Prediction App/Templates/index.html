@@ -172,7 +172,7 @@
 <div class="prediction-page">
 	<div class="prediction-container">
 		<div class="prediction-header">
-			<h1>🏥 DiaPredict</h1>
+			<h1><i class="fas fa-hospital"></i> DiaPredict</h1>
 			<p>Early Diabetes Detection System - 89.6% Accuracy</p>
 		</div>
 
@@ -182,7 +182,7 @@
 			<form method="post" action="{{ url_for('predict') }}" id="predictionForm">
 				<!-- Personal Information Section -->
 				<div class="form-section">
-					<div class="section-title">📋 Personal Information</div>
+					<div class="section-title"><i class="fas fa-user"></i> Personal Information</div>
 					<div class="form-grid">
 						<div class="form-group">
 							<label for="Age">Age</label>
@@ -199,7 +199,7 @@
 
 				<!-- Clinical Measurements Section -->
 				<div class="form-section">
-					<div class="section-title">💉 Clinical Measurements</div>
+					<div class="section-title"><i class="fas fa-heartbeat"></i> Clinical Measurements</div>
 					<div class="form-grid">
 						<div class="form-group">
 							<label for="Glucose">Glucose Level</label>
@@ -226,7 +226,7 @@
 
 				<!-- Body Metrics Section -->
 				<div class="form-section">
-					<div class="section-title">⚖️ Body Metrics</div>
+					<div class="section-title"><i class="fas fa-weight"></i> Body Metrics</div>
 					<div class="form-grid">
 						<div class="form-group">
 							<label for="BMI">BMI (Body Mass Index)</label>
@@ -243,8 +243,8 @@
 
 				<!-- Action Buttons -->
 				<div class="button-group">
-					<button type="submit" class="btn-submit">🔍 Predict Diabetes Risk</button>
-					<button type="reset" class="btn-reset">Clear Form</button>
+					<button type="submit" class="btn-submit"><i class="fas fa-search"></i> Predict Diabetes Risk</button>
+					<button type="reset" class="btn-reset"><i class="fas fa-redo"></i> Clear Form</button>
 				</div>
 			</form>
 		</div>
@@ -267,7 +267,7 @@
 			const el = document.getElementById(name);
 			if (!el.value.trim()) {
 				e.preventDefault();
-				errorDiv.textContent = `❌ Please fill in all fields. Missing: ${name}`;
+				errorDiv.innerHTML = `<i class="fas fa-times-circle"></i> Please fill in all fields. Missing: ${name}`;
 				errorDiv.classList.add('active');
 				el.focus();
 				return false;
@@ -276,7 +276,7 @@
 			const value = parseFloat(el.value);
 			if (isNaN(value)) {
 				e.preventDefault();
-				errorDiv.textContent = `❌ ${name} must be a valid number`;
+				errorDiv.innerHTML = `<i class="fas fa-times-circle"></i> ${name} must be a valid number`;
 				errorDiv.classList.add('active');
 				el.focus();
 				return false;
