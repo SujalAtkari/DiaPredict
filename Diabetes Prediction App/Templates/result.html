@@ -5,18 +5,197 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>Prediction Result</title>
 	<style>
-		body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
-		.container { max-width: 480px; margin: 40px auto; background: #fff; padding: 24px 28px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; }
-		h1 { margin-bottom: 16px; }
-		p { font-size: 18px; margin-top: 8px; }
-		a { display: inline-block; margin-top: 20px; text-decoration: none; color: #1976d2; }
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+		}
+		.container {
+			max-width: 500px;
+			width: 100%;
+			background: white;
+			border-radius: 16px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+			overflow: hidden;
+		}
+		.header {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			padding: 40px 30px;
+			text-align: center;
+		}
+		.header h1 {
+			font-size: 28px;
+			margin-bottom: 10px;
+			font-weight: 700;
+		}
+		.result-content {
+			padding: 40px 30px;
+			text-align: center;
+		}
+		.result-icon {
+			font-size: 64px;
+			margin-bottom: 20px;
+		}
+		.result-box {
+			padding: 25px;
+			border-radius: 12px;
+			margin-bottom: 20px;
+		}
+		.result-box.positive {
+			background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+			color: white;
+		}
+		.result-box.negative {
+			background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+			color: white;
+		}
+		.result-box.error {
+			background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+			color: white;
+		}
+		.result-title {
+			font-size: 18px;
+			font-weight: 700;
+			margin-bottom: 10px;
+		}
+		.result-message {
+			font-size: 16px;
+			line-height: 1.6;
+		}
+		.disclaimer {
+			background: #f0f0f0;
+			padding: 15px;
+			border-radius: 8px;
+			font-size: 13px;
+			color: #666;
+			margin-bottom: 20px;
+			border-left: 4px solid #667eea;
+		}
+		.action-group {
+			display: flex;
+			gap: 12px;
+		}
+		a, button {
+			flex: 1;
+			padding: 14px 24px;
+			border: none;
+			border-radius: 8px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			text-decoration: none;
+			transition: all 0.3s ease;
+			text-align: center;
+			display: inline-block;
+		}
+		.btn-back {
+			background: #f0f0f0;
+			color: #333;
+		}
+		.btn-back:hover {
+			background: #e0e0e0;
+		}
+		.btn-download {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+		}
+		.btn-download:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+		}
+		@media (max-width: 600px) {
+			.header h1 {
+				font-size: 24px;
+			}
+			.result-content {
+				padding: 25px 20px;
+			}
+			.action-group {
+				flex-direction: column;
+			}
+		}
 	</style>
+	<script>
+		function extractPrediction(text) {
+			if (text.includes('Diabetes Positive')) {
+				return 'positive';
+			} else if (text.includes('Diabetes Negative')) {
+				return 'negative';
+			}
+			return 'error';
+		}
+
+		function getPredictionDetails(text) {
+			const type = extractPrediction(text);
+			if (type === 'positive') {
+				return {
+					icon: '⚠️',
+					title: 'Diabetes Risk Detected',
+					message: 'The model predicts a positive diabetes risk.',
+					advice: 'Please consult with a healthcare professional for further evaluation and medical advice.'
+				};
+			} else if (type === 'negative') {
+				return {
+					icon: '✅',
+					title: 'Low Diabetes Risk',
+					message: 'The model predicts a negative diabetes risk.',
+					advice: 'Maintain a healthy lifestyle and regular health checkups.'
+				};
+			} else {
+				return {
+					icon: '❌',
+					title: 'Error in Prediction',
+					message: text,
+					advice: 'Please try again or contact support.'
+				};
+			}
+		}
+
+		document.addEventListener('DOMContentLoaded', function() {
+			const predictionText = "{{ prediction_text }}";
+			const details = getPredictionDetails(predictionText);
+			const type = extractPrediction(predictionText);
+
+			document.getElementById('resultIcon').textContent = details.icon;
+			document.getElementById('resultTitle').textContent = details.title;
+			document.getElementById('resultMessage').textContent = details.message;
+			document.getElementById('advice').textContent = details.advice;
+			document.getElementById('resultBox').className = 'result-box ' + type;
+		});
+	</script>
 </head>
 <body>
 	<div class="container">
-		<h1>Prediction Result</h1>
-		<p>{{ prediction_text }}</p>
-		<a href="/">&#8592; Back to form</a>
+		<div class="header">
+			<h1>🏥 DiaPredict</h1>
+			<p>Prediction Result</p>
+		</div>
+
+		<div class="result-content">
+			<div class="result-box error" id="resultBox">
+				<div class="result-icon" id="resultIcon"></div>
+				<div class="result-title" id="resultTitle"></div>
+				<div class="result-message" id="resultMessage"></div>
+			</div>
+
+			<div class="disclaimer">
+				<strong>📋 Important:</strong> This prediction is for informational purposes only.
+				{{ prediction_text | default("Unable to generate prediction.") }}
+			</div>
+
+			<div id="advice" style="background: #e8f5e9; padding: 15px; border-radius: 8px; color: #2e7d32; margin-bottom: 20px;"></div>
+
+			<div class="action-group">
+				<a href="/" class="btn-back">← Take Another Test</a>
+			</div>
+		</div>
 	</div>
 </body>
 </html>
