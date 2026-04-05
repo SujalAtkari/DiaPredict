@@ -12,7 +12,7 @@ import joblib
 import os
 import logging
 from dotenv import load_dotenv
-from database_sql import db, User, Prediction, create_user, get_user_by_email, get_user_by_userid, verify_user, save_prediction, get_user_predictions, update_user_login, increment_login_attempts, is_account_locked
+from database_sql import db, User, Prediction, create_user, get_user_by_email, get_user_by_userid, verify_user, save_prediction, get_user_predictions, update_user_login, increment_login_attempts, is_account_locked, update_user_profile
 from utils.stats import get_chart_data, calculate_risk_distribution
 from utils.auth import hash_password, verify_password, validate_email, is_password_strong
 
@@ -604,6 +604,75 @@ def logout() -> Response:
     logout_user()
     flash("You have been logged out successfully.", "success")
     return redirect(url_for('login'))
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile() -> Union[str, Response]:
+    """User profile page - view and edit profile information"""
+    if request.method == 'POST':
+        try:
+            email = request.form.get('email', '').strip().lower()
+            username = request.form.get('username', '').strip()
+
+            # Validate inputs
+            if not email or not username:
+                flash("All fields are required.", "error")
+                logger.warning(f"Profile update: Missing fields for user {current_user.userid}")
+                return redirect(url_for('profile'))
+
+            if len(email) > 254:
+                flash("Email is too long (max 254 characters).", "error")
+                return redirect(url_for('profile'))
+
+            if len(username) > 80:
+                flash("Username is too long (max 80 characters).", "error")
+                return redirect(url_for('profile'))
+
+            # Email validation
+            email_valid, email_error = validate_email(email)
+            if not email_valid:
+                flash(email_error, "error")
+                logger.info(f"Profile update: Invalid email format - {email}")
+                return redirect(url_for('profile'))
+
+            # Username validation
+            if not (3 <= len(username) <= 30 and all(c.isalnum() or c in '_-' for c in username)):
+                flash("Username must be 3-30 characters (letters, numbers, underscore, hyphen only).", "error")
+                logger.info(f"Profile update: Invalid username format")
+                return redirect(url_for('profile'))
+
+            # Update profile
+            success = update_user_profile(current_user.userid, email, username)
+
+            if success:
+                # Refresh current_user to reflect changes
+                updated_user = get_user_by_userid(current_user.userid)
+                if updated_user:
+                    login_user(updated_user, remember=True)
+                    logger.info(f"Profile updated successfully for user {current_user.userid}")
+                    flash("Profile updated successfully!", "success")
+                    return redirect(url_for('profile'))
+            else:
+                # Check what caused the failure
+                if get_user_by_email(email) and get_user_by_email(email).userid != current_user.userid:
+                    flash("Email already registered by another user.", "error")
+                elif get_user_by_userid(current_user.userid) and any(u.username == username and u.userid != current_user.userid for u in User.query.all()):
+                    flash("Username already taken by another user.", "error")
+                else:
+                    flash("Failed to update profile. Please try again.", "error")
+                logger.warning(f"Profile update failed for user {current_user.userid}")
+                return redirect(url_for('profile'))
+
+        except Exception as e:
+            logger.error(f"Profile update error for user {current_user.userid}: {str(e)}", exc_info=True)
+            flash("An error occurred while updating your profile. Please try again.", "error")
+            return redirect(url_for('profile'))
+
+    # GET request - display profile
+    return render_template(
+        'profile.html',
+        user=current_user
+    )
 
 # ==================== ERROR HANDLERS ====================
 

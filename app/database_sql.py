@@ -108,6 +108,32 @@ def update_user_login(userid: int) -> None:
         user.login_attempts = 0
         db.session.commit()
 
+def update_user_profile(userid: int, email: str, username: str) -> bool:
+    """Update user email and username"""
+    try:
+        user = User.query.get(userid)
+        if not user:
+            return False
+
+        # Check if email already exists (and it's not the current user's email)
+        existing_email = User.query.filter_by(email=email.lower()).first()
+        if existing_email and existing_email.userid != userid:
+            return False
+
+        # Check if username already exists (and it's not the current user's username)
+        existing_username = User.query.filter_by(username=username).first()
+        if existing_username and existing_username.userid != userid:
+            return False
+
+        user.email = email.lower()
+        user.username = username
+        user.updated_at = datetime.utcnow()
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        return False
+
 def increment_login_attempts(userid: int) -> None:
     """Track failed login attempts for rate limiting"""
     user = User.query.get(userid)
