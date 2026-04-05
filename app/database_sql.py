@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from typing import Optional, List
 import os
+import atexit
 
 # Load environment variables from .env file in current directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -11,6 +12,16 @@ ENV_PATH = os.path.join(BASE_DIR, '.env')
 load_dotenv(ENV_PATH)
 
 db = SQLAlchemy()
+
+# Auto-cleanup: Close database connections on exit
+def cleanup_db():
+    """Close database connections on application shutdown"""
+    try:
+        db.engine.dispose()
+    except:
+        pass
+
+atexit.register(cleanup_db)
 
 # SQLAlchemy models
 class User(UserMixin, db.Model):

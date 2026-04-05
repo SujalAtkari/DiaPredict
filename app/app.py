@@ -5,6 +5,7 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from werkzeug.wrappers import Response
 from datetime import datetime, timedelta
 from typing import Union, Dict, List, Tuple, Optional
+from sqlalchemy import inspect
 import numpy as np
 import pandas as pd
 import joblib
@@ -610,9 +611,27 @@ def initialize_database():
     """Initialize Flask app context and create database tables"""
     try:
         with app.app_context():
+            # Ensure data directory exists
+            os.makedirs(os.path.dirname(SQLITE_PATH), exist_ok=True)
+
+            # Check if database file exists and is empty
+            if os.path.exists(SQLITE_PATH):
+                if os.path.getsize(SQLITE_PATH) == 0:
+                    logger.warning(f"Database file is empty, removing: {SQLITE_PATH}")
+                    try:
+                        os.remove(SQLITE_PATH)
+                    except Exception as e:
+                        logger.warning(f"Could not remove empty DB file: {e}")
+
             logger.info("Creating database tables...")
             db.create_all()
-        logger.info(f"[OK] Database initialized successfully: {app.config['SQLALCHEMY_DATABASE_URI']}")
+            logger.info(f"[OK] Database initialized successfully: {app.config['SQLALCHEMY_DATABASE_URI']}")
+
+            # Verify tables were created
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            logger.info(f"Database tables: {tables}")
+
     except Exception as e:
         logger.error(f"[ERROR] Database initialization error: {e}", exc_info=True)
         # Try SQLite fallback if using MySQL/other DB
@@ -628,7 +647,7 @@ def initialize_database():
             except Exception as fallback_error:
                 logger.critical(f"[ERROR] Fallback initialization failed: {fallback_error}", exc_info=True)
                 raise
-    
+
     # Load ML models on startup
     logger.info("Loading ML models at startup...")
     load_models()
