@@ -21,18 +21,24 @@ ENV_PATH = os.path.join(BASE_DIR, '.env')
 load_dotenv(ENV_PATH)
 
 # ==================== LOGGING CONFIGURATION ====================
+# Get parent directory (project root)
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(APP_DIR)
+LOGS_DIR = os.path.join(PROJECT_ROOT, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('diabetes_app.log'),
+        logging.FileHandler(os.path.join(LOGS_DIR, 'diabetes_app.log')),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SQLITE_PATH = os.path.join(BASE_DIR, 'diapredict.db')
+BASE_DIR = APP_DIR
+SQLITE_PATH = os.path.join(PROJECT_ROOT, 'data', 'diapredict.db')
 DEFAULT_DATABASE_URL = f"sqlite:///{SQLITE_PATH}"
 
 # ==================== PARAMETER VALIDATION RANGES ====================
@@ -138,12 +144,14 @@ login_manager.login_message_category = "info"
 
 # ==================== MODEL LOADING (LAZY LOAD) ====================
 
+MODELS_DIR = os.path.join(PROJECT_ROOT, 'models')
+
 MODEL_PATHS = [
-    os.path.join(BASE_DIR, "final_diabetes_model.pkl")
+    os.path.join(MODELS_DIR, "final_diabetes_model.pkl")
 ]
 
 IMPUTER_PATHS = [
-    os.path.join(BASE_DIR, "diabetes_imputer.pkl")
+    os.path.join(MODELS_DIR, "diabetes_imputer.pkl")
 ]
 
 model = None

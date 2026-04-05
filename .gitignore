@@ -49,6 +49,8 @@ mongodb/
 # Logs
 *.log
 logs/
+!logs/.gitkeep
+logs/
 
 # Jupyter
 .ipynb_checkpoints
