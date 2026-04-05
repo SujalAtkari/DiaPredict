@@ -168,7 +168,16 @@
 				<strong><i class="fas fa-clipboard-list"></i> Important:</strong> This prediction is for informational purposes only. Always consult with a healthcare professional for confirmed diagnosis.
 			</div>
 
-			<div id="advice"></div>
+			{% if advice %}
+			<div id="advice" style="background: #e8f5e9; padding: 15px; border-radius: 8px; color: #2e7d32; margin-bottom: 20px; font-size: 14px; font-weight: 500; line-height: 1.6;">
+				<strong><i class="fas fa-lightbulb"></i> Personalized Health Recommendations:</strong>
+				<ul style="margin-top: 10px; padding-left: 20px;">
+					{% for item in advice %}
+					<li>{{ item }}</li>
+					{% endfor %}
+				</ul>
+			</div>
+			{% endif %}
 
 			<div class="action-group">
 				<a href="{{ url_for('predict') }}" class="btn-back"><i class="fas fa-redo"></i> Take Another Test</a>
@@ -194,22 +203,19 @@
 			return {
 				icon: '<i class="fas fa-exclamation-triangle" style="color: #ff6b6b;"></i>',
 				title: 'Diabetes Risk Detected',
-				message: 'The model predicts a positive diabetes risk.',
-				advice: 'Please consult with a healthcare professional for further evaluation and medical advice. Early intervention can help manage your health effectively.'
+				message: 'The model predicts a positive diabetes risk.'
 			};
 		} else if (type === 'negative') {
 			return {
 				icon: '<i class="fas fa-check-circle" style="color: #4ade80;"></i>',
 				title: 'Low Diabetes Risk',
-				message: 'The model predicts a negative diabetes risk.',
-				advice: 'Maintain a healthy lifestyle and regular health checkups. Continue with balanced diet, regular exercise, and periodic screening.'
+				message: 'The model predicts a negative diabetes risk.'
 			};
 		} else {
 			return {
 				icon: '<i class="fas fa-times-circle" style="color: #f59e0b;"></i>',
 				title: 'Error in Prediction',
-				message: text,
-				advice: 'Please try again or contact support.'
+				message: text
 			};
 		}
 	}
@@ -222,7 +228,6 @@
 		document.getElementById('resultIcon').innerHTML = details.icon;
 		document.getElementById('resultTitle').textContent = details.title;
 		document.getElementById('resultMessage').textContent = details.message;
-		document.getElementById('advice').textContent = details.advice;
 		document.getElementById('resultBox').className = 'result-box ' + type;
 	});
 </script>

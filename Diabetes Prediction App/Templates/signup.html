@@ -160,31 +160,32 @@
                 {% endif %}
             {% endwith %}
 
-            <form method="post" id="signupForm">
+            <form method="post" id="signupForm" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required />
+                    <input type="email" id="email" name="email" required autocomplete="email" maxlength="254" />
                 </div>
 
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required />
+                    <input type="text" id="username" name="username" required maxlength="30" pattern="[a-zA-Z0-9_-]{3,30}" title="3-30 characters (letters, numbers, underscore, hyphen)" />
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required onkeyup="checkPasswordStrength(this.value)" />
+                    <input type="password" id="password" name="password" required maxlength="256" onkeyup="checkPasswordStrength(this.value)" autocomplete="new-password" />
                     <div class="strength-bar">
                         <div class="strength-fill" id="strengthFill"></div>
                     </div>
                     <div class="password-hint">
-                        Must be at least 8 characters with uppercase, lowercase, and number
+                        Must be at least 8 characters with uppercase, lowercase, number, and special character (!@#$%^&*)
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="confirm_password">Confirm Password</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required />
+                    <input type="password" id="confirm_password" name="confirm_password" required maxlength="256" autocomplete="new-password" />
                 </div>
 
                 <button type="submit">Create Account</button>

@@ -124,23 +124,31 @@
                 <thead>
                     <tr>
                         <th>Date & Time</th>
+                        <th>Pregnancies</th>
                         <th>Glucose</th>
-                        <th>BMI</th>
                         <th>Blood Pressure</th>
+                        <th>Skin Thickness</th>
                         <th>Insulin</th>
+                        <th>BMI</th>
+                        <th>Diabetes Pedigree</th>
+                        <th>Age</th>
                         <th>Result</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for pred in predictions %}
                         <tr>
-                            <td>{{ pred.created_at_str }}</td>
-                            <td>{{ pred.glucose }} mg/dL</td>
-                            <td>{{ pred.bmi }} kg/m²</td>
-                            <td>{{ pred.blood_pressure }} mmHg</td>
-                            <td>{{ pred.insulin }} µU/mL</td>
+                            <td>{{ pred.created_at.strftime('%Y-%m-%d %H:%M:%S') if pred.created_at else 'N/A' }}</td>
+                            <td>{{ "%.1f" % pred.pregnancies if pred.pregnancies else 'N/A' }}</td>
+                            <td>{{ "%.1f" % pred.glucose if pred.glucose else 'N/A' }} mg/dL</td>
+                            <td>{{ "%.1f" % pred.blood_pressure if pred.blood_pressure else 'N/A' }} mmHg</td>
+                            <td>{{ "%.1f" % pred.skin_thickness if pred.skin_thickness else 'N/A' }} mm</td>
+                            <td>{{ "%.1f" % pred.insulin if pred.insulin else 'N/A' }} mU/mL</td>
+                            <td>{{ "%.1f" % pred.bmi if pred.bmi else 'N/A' }} kg/m²</td>
+                            <td>{{ "%.3f" % pred.diabetes_pedigree_function if pred.diabetes_pedigree_function else 'N/A' }}</td>
+                            <td>{{ "%.0f" % pred.age if pred.age else 'N/A' }} yrs</td>
                             <td>
-                                {% if pred.prediction == 1 %}
+                                {% if pred.outcome == 1 %}
                                     <span class="risk-badge positive"><i class="fas fa-exclamation-triangle"></i> Positive</span>
                                 {% else %}
                                     <span class="risk-badge negative"><i class="fas fa-check-circle"></i> Negative</span>

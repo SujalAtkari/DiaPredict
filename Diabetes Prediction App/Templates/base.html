@@ -21,7 +21,7 @@
                 {% for category, message in messages %}
                     <div class="toast toast-{{ category }}" id="toast-{{ loop.index }}">
                         <div class="toast-content">
-                            {% if category == 'success' %}✓{% elif category == 'error' %}✗{% elif category == 'warning' %}⚠{% else %}ℹ{% endif %}
+                            {% if category == 'success' %}[OK]{% elif category == 'error' %}[FAIL]{% elif category == 'warning' %}[WARN]{% else %}[INFO]{% endif %}
                             {{ message }}
                         </div>
                         <button class="toast-close" onclick="closeToast('toast-{{ loop.index }}')">&times;</button>

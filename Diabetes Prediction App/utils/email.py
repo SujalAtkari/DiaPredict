@@ -3,6 +3,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from dotenv import load_dotenv
+from typing import Optional
 
 load_dotenv()
 
@@ -12,11 +13,11 @@ SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
 
 
-def send_verification_email(recipient_email, username, verification_link):
+def send_verification_email(recipient_email: str, username: str, verification_link: str) -> bool:
     """Send verification email to user"""
 
     if not SENDER_EMAIL or not SENDER_PASSWORD:
-        print("⚠ Warning: Email credentials not configured. Email not sent.")
+        print("[WARN] Email credentials not configured. Email not sent.")
         print(f"Verification link: {verification_link}")
         return False
 
@@ -33,16 +34,16 @@ def send_verification_email(recipient_email, username, verification_link):
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-                <h1 style="margin: 0;">🏥 DiaPredict</h1>
+                <h1 style="margin: 0;">[HOSPITAL] DiaPredict</h1>
                 <p style="margin: 10px 0 0 0;">Early Diabetes Detection System</p>
               </div>
 
-              <h2 style="color: #667eea;">Hello {username}! 👋</h2>
+              <h2 style="color: #667eea;">Hello {username}! [HELLO]</h2>
               <p>Thank you for registering with DiaPredict. To complete your account setup, please verify your email address by clicking the button below:</p>
 
               <div style="text-align: center; margin: 30px 0;">
                 <a href="{verification_link}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                  ✓ Verify Email Address
+                  [OK] Verify Email Address
                 </a>
               </div>
 
@@ -76,30 +77,30 @@ def send_verification_email(recipient_email, username, verification_link):
             server.login(SENDER_EMAIL, SENDER_PASSWORD)
             server.sendmail(SENDER_EMAIL, recipient_email, message.as_string())
 
-        print(f"✓ Verification email sent to {recipient_email}")
+        print(f"[OK] Verification email sent to {recipient_email}")
         return True
 
     except smtplib.SMTPAuthenticationError:
-        print("✗ SMTP Authentication Error: Check email credentials")
+        print("[FAIL] SMTP Authentication Error: Check email credentials")
         return False
     except smtplib.SMTPException as e:
-        print(f"✗ SMTP Error: {e}")
+        print(f"[FAIL] SMTP Error: {e}")
         return False
     except Exception as e:
-        print(f"✗ Error sending email: {e}")
+        print(f"[FAIL] Error sending email: {e}")
         return False
 
 
-def send_welcome_email(recipient_email, username):
+def send_welcome_email(recipient_email: str, username: str) -> bool:
     """Send welcome email after account verification"""
 
     if not SENDER_EMAIL or not SENDER_PASSWORD:
-        print("⚠ Warning: Email credentials not configured.")
+        print("[WARN] Email credentials not configured.")
         return False
 
     try:
         message = MIMEMultipart("alternative")
-        message["Subject"] = "Welcome to DiaPredict! 🎉"
+        message["Subject"] = "Welcome to DiaPredict! [PARTY]"
         message["From"] = SENDER_EMAIL
         message["To"] = recipient_email
 
@@ -108,20 +109,20 @@ def send_welcome_email(recipient_email, username):
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-                <h1 style="margin: 0;">🏥 DiaPredict</h1>
+                <h1 style="margin: 0;">[HOSPITAL] DiaPredict</h1>
                 <p style="margin: 10px 0 0 0;">Early Diabetes Detection System</p>
               </div>
 
-              <h2 style="color: #667eea;">Welcome to DiaPredict, {username}! 🎉</h2>
+              <h2 style="color: #667eea;">Welcome to DiaPredict, {username}! [PARTY]</h2>
               <p>Your account has been successfully verified. You can now start using DiaPredict to monitor your health and detect early signs of diabetes.</p>
 
               <h3 style="color: #667eea;">What You Can Do:</h3>
               <ul>
-                <li>📊 Take personalized diabetes risk assessments</li>
-                <li>📈 Track your health metrics over time</li>
-                <li>📉 Visualize your test results with interactive charts</li>
-                <li>💾 View your complete prediction history</li>
-                <li>📋 Get personalized health recommendations</li>
+                <li>[CHART] Take personalized diabetes risk assessments</li>
+                <li>[ARROW_UP] Track your health metrics over time</li>
+                <li>[ARROW_DOWN] Visualize your test results with interactive charts</li>
+                <li>[SAVE] View your complete prediction history</li>
+                <li>[LIST] Get personalized health recommendations</li>
               </ul>
 
               <div style="text-align: center; margin: 30px 0;">
@@ -146,9 +147,9 @@ def send_welcome_email(recipient_email, username):
             server.login(SENDER_EMAIL, SENDER_PASSWORD)
             server.sendmail(SENDER_EMAIL, recipient_email, message.as_string())
 
-        print(f"✓ Welcome email sent to {recipient_email}")
+        print(f"[OK] Welcome email sent to {recipient_email}")
         return True
 
     except Exception as e:
-        print(f"✗ Error sending welcome email: {e}")
+        print(f"[FAIL] Error sending welcome email: {e}")
         return False

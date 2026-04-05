@@ -202,7 +202,7 @@
     <!-- Header -->
     <div class="dashboard-header">
         <h1><i class="fas fa-chart-pie"></i> Your Dashboard</h1>
-        <p style="color: #666; margin-top: 8px;">Track your diabetes risk assessments and health metrics (Demo Mode)</p>
+        <p style="color: #666; margin-top: 8px;">Track your diabetes risk assessments and health metrics in real-time</p>
     </div>
 
     <!-- Statistics Cards -->
@@ -253,55 +253,52 @@
 
     <!-- Prediction History Table -->
     <div class="history-container">
-        <div class="history-title"><i class="fas fa-clipboard-list"></i> Recent Predictions (Demo Data)</div>
+        <div class="history-title"><i class="fas fa-clipboard-list"></i> Recent Predictions (Real-time Data)</div>
+        {% if recent_predictions %}
         <table class="history-table">
             <thead>
                 <tr>
                     <th>Date & Time</th>
+                    <th>Pregnancies</th>
                     <th>Glucose</th>
-                    <th>BMI</th>
                     <th>Blood Pressure</th>
+                    <th>Skin Thickness</th>
+                    <th>Insulin</th>
+                    <th>BMI</th>
+                    <th>Diabetes Pedigree</th>
+                    <th>Age</th>
                     <th>Result</th>
                 </tr>
             </thead>
             <tbody>
+                {% for pred in recent_predictions %}
                 <tr>
-                    <td>2024-04-03 15:30:00</td>
-                    <td>165.5 mg/dL</td>
-                    <td>32.1 kg/m²</td>
-                    <td>88.9 mmHg</td>
-                    <td><span class="risk-badge positive"><i class="fas fa-exclamation-triangle"></i> Positive</span></td>
+                    <td>{{ pred.created_at.strftime('%Y-%m-%d %H:%M:%S') if pred.created_at else 'N/A'}}</td>
+                    <td>{{ "%.1f" % pred.pregnancies if pred.pregnancies else 'N/A' }}</td>
+                    <td>{{ "%.1f" % pred.glucose if pred.glucose else 'N/A' }} mg/dL</td>
+                    <td>{{ "%.1f" % pred.blood_pressure if pred.blood_pressure else 'N/A' }} mmHg</td>
+                    <td>{{ "%.1f" % pred.skin_thickness if pred.skin_thickness else 'N/A' }} mm</td>
+                    <td>{{ "%.1f" % pred.insulin if pred.insulin else 'N/A' }} mU/mL</td>
+                    <td>{{ "%.1f" % pred.bmi if pred.bmi else 'N/A' }} kg/m²</td>
+                    <td>{{ "%.3f" % pred.diabetes_pedigree_function if pred.diabetes_pedigree_function else 'N/A' }}</td>
+                    <td>{{ "%.0f" % pred.age if pred.age else 'N/A' }} yrs</td>
+                    <td>
+                        {% if pred.outcome == 1 %}
+                            <span class="risk-badge positive"><i class="fas fa-exclamation-triangle"></i> Positive</span>
+                        {% else %}
+                            <span class="risk-badge negative"><i class="fas fa-check-circle"></i> Negative</span>
+                        {% endif %}
+                    </td>
                 </tr>
-                <tr>
-                    <td>2024-04-02 09:20:00</td>
-                    <td>92.1 mg/dL</td>
-                    <td>25.5 kg/m²</td>
-                    <td>76.8 mmHg</td>
-                    <td><span class="risk-badge negative"><i class="fas fa-check-circle"></i> Negative</span></td>
-                </tr>
-                <tr>
-                    <td>2024-04-01 11:45:00</td>
-                    <td>145.8 mg/dL</td>
-                    <td>28.5 kg/m²</td>
-                    <td>85.2 mmHg</td>
-                    <td><span class="risk-badge positive"><i class="fas fa-exclamation-triangle"></i> Positive</span></td>
-                </tr>
-                <tr>
-                    <td>2024-03-31 14:15:00</td>
-                    <td>105.2 mg/dL</td>
-                    <td>24.8 kg/m²</td>
-                    <td>78.5 mmHg</td>
-                    <td><span class="risk-badge negative"><i class="fas fa-check-circle"></i> Negative</span></td>
-                </tr>
-                <tr>
-                    <td>2024-03-30 10:30:00</td>
-                    <td>88.5 mg/dL</td>
-                    <td>23.2 kg/m²</td>
-                    <td>75.0 mmHg</td>
-                    <td><span class="risk-badge negative"><i class="fas fa-check-circle"></i> Negative</span></td>
-                </tr>
+                {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <div style="padding: 20px; background: #f9f9f9; border-radius: 8px; text-align: center; color: #999;">
+            <i class="fas fa-inbox" style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
+            <p>No predictions yet. Visit the <a href="{{ url_for('predict') }}">Prediction</a> page to get started.</p>
+        </div>
+        {% endif %}
         <a href="{{ url_for('predictions_history') }}" class="view-all-btn">View Full History →</a>
     </div>
 </div>
