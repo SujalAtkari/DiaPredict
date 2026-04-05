@@ -99,6 +99,18 @@
             border-bottom: 2px solid #f0f0f0;
         }
 
+        .chart-subtitle {
+            font-size: 13px;
+            margin-top: -12px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #0ea5a5;
+        }
+
+        .chart-subtitle.no-data {
+            color: #f59e0b;
+        }
+
         .chart-wrapper {
             position: relative;
             height: 300px;
@@ -229,6 +241,13 @@
         <!-- Risk Distribution Pie Chart -->
         <div class="chart-container">
             <div class="chart-title">Risk Distribution</div>
+            <div class="chart-subtitle {% if not has_predictions %}no-data{% endif %}">
+                {% if has_predictions %}
+                    Risk analysis available for {{ username }}.
+                {% else %}
+                    All values showing 0 for {{ username }} (No data yet).
+                {% endif %}
+            </div>
             <div class="chart-wrapper">
                 <canvas id="riskDistributionChart"></canvas>
             </div>
@@ -311,6 +330,19 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const hasPredictions = {{ 'true' if has_predictions else 'false' }};
+
+        const riskDistribution = {{ chart_data.risk_distribution | tojson }};
+        const healthMetricsData = {{ chart_data.health_metrics | tojson }};
+        const timelineData = {{ chart_data.timeline | tojson }};
+
+        const avgMetrics = healthMetricsData.length > 0 ? healthMetricsData[0] : {
+            glucose: 0,
+            bmi: 0,
+            blood_pressure: 0,
+            insulin: 0
+        };
+
         // Risk Distribution Pie Chart
         const riskCtx = document.getElementById('riskDistributionChart').getContext('2d');
         new Chart(riskCtx, {
@@ -318,9 +350,9 @@
             data: {
                 labels: ['Positive Risk', 'Negative Risk'],
                 datasets: [{
-                    data: [2, 3],
-                    backgroundColor: ['#ff6b6b', '#4ade80'],
-                    borderColor: ['#d32f2f', '#22c55e'],
+                    data: [riskDistribution.positive || 0, riskDistribution.negative || 0],
+                    backgroundColor: hasPredictions ? ['#ef4444', '#14b8a6'] : ['#cbd5e1', '#e2e8f0'],
+                    borderColor: hasPredictions ? ['#b91c1c', '#0f766e'] : ['#94a3b8', '#cbd5e1'],
                     borderWidth: 2,
                     hoverOffset: 10
                 }]
@@ -349,12 +381,17 @@
                 labels: ['Glucose', 'BMI', 'Blood\nPressure', 'Insulin'],
                 datasets: [{
                     label: 'Average Value',
-                    data: [119.42, 26.82, 80.88, 86.86],
-                    backgroundColor: ['#667eea', '#764ba2', '#a78bfa', '#c084fc'],
-                    borderColor: ['#667eea', '#764ba2', '#a78bfa', '#c084fc'],
+                    data: [
+                        avgMetrics.glucose || 0,
+                        avgMetrics.bmi || 0,
+                        avgMetrics.blood_pressure || 0,
+                        avgMetrics.insulin || 0
+                    ],
+                    backgroundColor: hasPredictions ? ['#0ea5e9', '#14b8a6', '#f59e0b', '#6366f1'] : ['#cbd5e1', '#cbd5e1', '#cbd5e1', '#cbd5e1'],
+                    borderColor: hasPredictions ? ['#0369a1', '#0f766e', '#b45309', '#3730a3'] : ['#94a3b8', '#94a3b8', '#94a3b8', '#94a3b8'],
                     borderWidth: 1,
                     borderRadius: 6,
-                    hoverBackgroundColor: ['#536dd4', '#6a4192', '#9879e3', '#ad72ea']
+                    hoverBackgroundColor: hasPredictions ? ['#0284c7', '#0d9488', '#d97706', '#4f46e5'] : ['#94a3b8', '#94a3b8', '#94a3b8', '#94a3b8']
                 }]
             },
             options: {
@@ -380,16 +417,22 @@
         new Chart(trendCtx, {
             type: 'line',
             data: {
-                labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'],
+                labels: timelineData.length > 0
+                    ? timelineData.map((item, idx) => item.date === 'No Data' ? '0' : `Test ${idx + 1}`)
+                    : ['0'],
                 datasets: [{
                     label: 'Risk Level',
-                    data: [0, 0, 1, 0, 1],
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    data: timelineData.length > 0 ? timelineData.map(item => item.risk || 0) : [0],
+                    borderColor: hasPredictions ? '#0ea5e9' : '#94a3b8',
+                    backgroundColor: hasPredictions ? 'rgba(14, 165, 233, 0.12)' : 'rgba(148, 163, 184, 0.2)',
                     fill: true,
                     tension: 0.4,
-                    pointBackgroundColor: ['#4ade80', '#4ade80', '#ff6b6b', '#4ade80', '#ff6b6b'],
-                    pointBorderColor: ['#4ade80', '#4ade80', '#ff6b6b', '#4ade80', '#ff6b6b'],
+                    pointBackgroundColor: timelineData.length > 0
+                        ? timelineData.map(item => item.risk === 1 ? '#ef4444' : '#14b8a6')
+                        : ['#94a3b8'],
+                    pointBorderColor: timelineData.length > 0
+                        ? timelineData.map(item => item.risk === 1 ? '#ef4444' : '#14b8a6')
+                        : ['#94a3b8'],
                     pointSize: 6,
                     hoverPointRadius: 8
                 }]

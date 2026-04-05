@@ -15,6 +15,7 @@ CREATE TABLE user (
     userid INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(120) UNIQUE NOT NULL,
     username VARCHAR(80) UNIQUE NOT NULL,
+    gender VARCHAR(10) NOT NULL DEFAULT 'other',
     password_hash VARCHAR(128),
     is_verified BOOLEAN DEFAULT FALSE,
     verification_token VARCHAR(128),

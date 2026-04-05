@@ -192,7 +192,7 @@
 						</div>
 						<div class="form-group">
 							<label for="Pregnancies">Pregnancies</label>
-							<div class="field-hint">Number of pregnancies (0-20)</div>
+							<div class="field-hint" id="pregnancyHint">Number of pregnancies (0-20)</div>
 							<input type="number" name="Pregnancies" id="Pregnancies" min="0" max="20" step="1" placeholder="0-20" required />
 						</div>
 					</div>
@@ -255,6 +255,28 @@
 <script>
 	const form = document.getElementById('predictionForm');
 	const errorDiv = document.getElementById('errorMessage');
+	const pregnanciesInput = document.getElementById('Pregnancies');
+	const pregnancyHint = document.getElementById('pregnancyHint');
+	const userGender = "{{ user_gender|default('other') }}";
+
+	function applyPregnancyRules() {
+		if (userGender === 'male') {
+			pregnanciesInput.value = '0';
+			pregnanciesInput.readOnly = true;
+			pregnanciesInput.placeholder = 'Fixed at 0 for male users';
+			pregnancyHint.textContent = 'Fixed at 0 based on selected gender';
+		} else {
+			pregnanciesInput.readOnly = false;
+			pregnanciesInput.placeholder = '0-20';
+			pregnancyHint.textContent = 'Number of pregnancies (0-20)';
+		}
+	}
+
+	applyPregnancyRules();
+
+	form.addEventListener('reset', function() {
+		setTimeout(applyPregnancyRules, 0);
+	});
 
 	form.addEventListener('submit', function(e) {
 		errorDiv.classList.remove('active');

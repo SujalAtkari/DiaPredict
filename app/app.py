@@ -5,7 +5,7 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from werkzeug.wrappers import Response
 from datetime import datetime, timedelta
 from typing import Union, Dict, List, Tuple, Optional
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 import numpy as np
 import pandas as pd
 import joblib
@@ -244,13 +244,19 @@ def signup() -> Union[str, Response]:
         try:
             email = request.form.get('email', '').strip().lower()
             username = request.form.get('username', '').strip()
+            gender = request.form.get('gender', '').strip().lower()
             password = request.form.get('password', '')
             confirm_password = request.form.get('confirm_password', '')
 
             # Validate all fields present and length
-            if not email or not username or not password:
+            if not email or not username or not password or not gender:
                 flash("All fields are required.", "error")
                 logger.warning(f"Signup: Missing required fields")
+                return redirect(url_for('signup'))
+
+            if gender not in {'male', 'female', 'other'}:
+                flash("Please select a valid gender.", "error")
+                logger.warning("Signup: Invalid gender value provided")
                 return redirect(url_for('signup'))
             
             if len(email) > 254:
@@ -301,7 +307,7 @@ def signup() -> Union[str, Response]:
 
             # Hash password and create user
             hashed_password = hash_password(password)
-            user_id = create_user(email, username, hashed_password, None)
+            user_id = create_user(email, username, gender, hashed_password, None)
             user = get_user_by_userid(user_id)
             
             if user:
@@ -376,7 +382,7 @@ def dashboard() -> Union[str, Response]:
     """Dashboard with user statistics and prediction history"""
     try:
         # Get predictions in ascending order (oldest first) for timeline chart
-        predictions = get_user_predictions(current_user.userid, ascending=True)
+        predictions = get_user_predictions(current_user.userid, username=current_user.username, ascending=True)
         
         # Convert predictions to dictionaries for chart calculations
         pred_dicts = []
@@ -410,17 +416,32 @@ def dashboard() -> Union[str, Response]:
                 'negative_percentage': round(risk_dist.get('negative_percentage', 0), 1)
             }
             # Get 5 most recent predictions (reverse order)
-            recent_predictions = get_user_predictions(current_user.userid, limit=5, ascending=False)
+            recent_predictions = get_user_predictions(current_user.userid, username=current_user.username, limit=5, ascending=False)
         else:
+            # New user with no predictions - show all zeros
             chart_data = {
                 'timeline': [],
-                'risk_distribution': {'positive': 0, 'negative': 0},
-                'health_metrics': [],
-                'summary': {}
+                'risk_distribution': {'positive': 0, 'negative': 0, 'total': 0},
+                'health_metrics': [
+                    {
+                        'period': 'all_time',
+                        'glucose': 0,
+                        'bmi': 0,
+                        'blood_pressure': 0,
+                        'insulin': 0,
+                    }
+                ],
+                'summary': {
+                    'total_tests': 0,
+                    'positive_count': 0,
+                    'negative_count': 0,
+                    'positive_percentage': 0,
+                    'negative_percentage': 0
+                }
             }
             stats = {
                 'total_tests': 0,
-                'total_predictions': 0,  # For template compatibility
+                'total_predictions': 0,
                 'positive_count': 0,
                 'negative_count': 0,
                 'positive_percentage': 0,
@@ -432,9 +453,11 @@ def dashboard() -> Union[str, Response]:
         return render_template(
             'dashboard.html',
             username=current_user.username,
+            user_gender=(current_user.gender or 'other').lower(),
             stats=stats,
             recent_predictions=recent_predictions,
-            chart_data=chart_data
+            chart_data=chart_data,
+            has_predictions=bool(pred_dicts)
         )
     except Exception as e:
         logger.error(f"Dashboard error for user {current_user.userid}: {str(e)}", exc_info=True)
@@ -445,7 +468,11 @@ def dashboard() -> Union[str, Response]:
 @login_required
 def predict() -> Union[str, Response]:
     if request.method == 'GET':
-        return render_template('index.html', username=current_user.username)
+        return render_template(
+            'index.html',
+            username=current_user.username,
+            user_gender=(current_user.gender or 'other').lower()
+        )
 
     # POST request
     try:
@@ -475,6 +502,11 @@ def predict() -> Union[str, Response]:
                 logger.warning(f"Predict: Invalid value for {name}: '{value_str}' for user {current_user.userid}")
                 flash(f"Invalid value for {name}: must be a number", "error")
                 return redirect(url_for('predict'))
+
+        # Enforce pregnancies=0 for male users even if someone tampers with frontend values.
+        if (current_user.gender or '').lower() == 'male' and raw_values[0] != 0:
+            logger.info(f"Predict: Overriding pregnancies value to 0 for male user {current_user.userid}")
+            raw_values[0] = 0.0
         
         if model is None or imputer is None:
             logger.error(f"Predict: Models not loaded for user {current_user.userid}")
@@ -551,7 +583,7 @@ def predictions_history() -> Union[str, Response]:
     """View all user predictions in reverse chronological order"""
     try:
         # Get predictions in descending order (newest first) for history view
-        predictions = get_user_predictions(current_user.userid, ascending=False)
+        predictions = get_user_predictions(current_user.userid, username=current_user.username, ascending=False)
         total_count = len(predictions)
         logger.info(f"Predictions history accessed for user {current_user.userid}")
         return render_template(
@@ -631,6 +663,15 @@ def initialize_database():
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
             logger.info(f"Database tables: {tables}")
+
+            # Backward-compatible migration for older databases: add gender column if missing.
+            if 'user' in tables:
+                user_columns = [col['name'] for col in inspector.get_columns('user')]
+                if 'gender' not in user_columns:
+                    logger.info("Adding missing gender column to user table...")
+                    with db.engine.begin() as conn:
+                        conn.execute(text("ALTER TABLE user ADD COLUMN gender VARCHAR(10) DEFAULT 'other'"))
+                    logger.info("[OK] Added gender column to user table")
 
     except Exception as e:
         logger.error(f"[ERROR] Database initialization error: {e}", exc_info=True)

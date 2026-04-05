@@ -16,12 +16,14 @@ sys.path.insert(0, app_dir)
 # Change to app directory for relative paths to work correctly
 os.chdir(app_dir)
 
-# Import the app from app.py in the app directory
-from app import app
+# Import the app and database initializer from app.py in the app directory
+from app import app, initialize_database
 
 if __name__ == "__main__":
+    # Ensure DB tables/migrations are applied before serving requests.
+    initialize_database()
     # For development
     port = int(os.getenv('PORT', 5000))
     debug = os.getenv('FLASK_ENV', 'development') == 'development'
-    # Disable use_reloader to avoid issues with debug mode
-    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+    # Enable auto-reloading for development
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=True)

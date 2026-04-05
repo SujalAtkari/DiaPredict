@@ -28,6 +28,7 @@ class User(UserMixin, db.Model):
     userid = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    gender = db.Column(db.String(10), nullable=False, default='other')
     password_hash = db.Column(db.String(128))
     is_verified = db.Column(db.Boolean, default=False)
     verification_token = db.Column(db.String(128))
@@ -65,10 +66,11 @@ class Prediction(db.Model):
 
 # ==================== USER MANAGEMENT ====================
 
-def create_user(email: str, username: str, password_hash: str, verification_token: Optional[str]) -> int:
+def create_user(email: str, username: str, gender: str, password_hash: str, verification_token: Optional[str]) -> int:
     user = User(
         email=email.lower(),
         username=username,
+        gender=gender,
         password_hash=password_hash,
         verification_token=verification_token,
         verification_token_expiry=datetime.utcnow() + timedelta(hours=24)
@@ -160,16 +162,19 @@ def save_prediction(userid: int, username: str, prediction_data: dict) -> int:
     db.session.commit()
     return prediction.id
 
-def get_user_predictions(userid: int, limit: Optional[int] = None, ascending: bool = True) -> List[Prediction]:
+def get_user_predictions(userid: int, username: Optional[str] = None, limit: Optional[int] = None, ascending: bool = True) -> List[Prediction]:
     """
     Fetch user predictions.
     
     Args:
         userid: User ID
+        username: Optional username filter to avoid showing stale records if user IDs are reused
         limit: Maximum number of predictions to return
         ascending: If True, return oldest first (for charts). If False, newest first (for history).
     """
     query = Prediction.query.filter_by(userid=userid)
+    if username:
+        query = query.filter_by(username=username)
     
     if ascending:
         query = query.order_by(Prediction.created_at.asc())  # Oldest first for charts
