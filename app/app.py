@@ -43,16 +43,16 @@ SQLITE_PATH = os.path.join(PROJECT_ROOT, 'data', 'diapredict.db')
 DEFAULT_DATABASE_URL = f"sqlite:///{SQLITE_PATH}"
 
 # ==================== PARAMETER VALIDATION RANGES ====================
-# Medical ranges for the 8 health parameters
+# Medical ranges for the 8 health parameters (user-friendly ranges)
 PARAMETER_RANGES = {
-    "Pregnancies": (0, 20.4, "Number of pregnancies (0-17 in dataset)"),
-    "Glucose": (13, 230, "Fasting blood glucose in mg/dL (44-199 in dataset)"),
-    "BloodPressure": (4.4, 141.6, "Diastolic blood pressure in mmHg (24-122 in dataset)"),
-    "SkinThickness": (0, 117.4, "Triceps skin fold thickness in mm (7-99 in dataset)"),
-    "Insulin": (0, 1012.4, "2-Hour serum insulin in mU/mL (14-846 in dataset)"),
-    "BMI": (8.42, 76.88, "Body Mass Index in kg/m² (18.2-67.1 in dataset)"),
-    "DiabetesPedigreeFunction": (0, 2.89, "Diabetes pedigree function (0.08-2.42 in dataset)"),
-    "Age": (9, 93, "Age in years (21-81 in dataset)"),
+    "Pregnancies": (0, 20, "Number of pregnancies (0-20)"),
+    "Glucose": (20, 250, "Fasting blood glucose in mg/dL (20-250)"),
+    "BloodPressure": (30, 150, "Diastolic blood pressure in mmHg (30-150)"),
+    "SkinThickness": (0, 120, "Triceps skin fold thickness in mm (0-120)"),
+    "Insulin": (0, 1000, "2-Hour serum insulin in mU/mL (0-1000)"),
+    "BMI": (10, 80, "Body Mass Index in kg/m² (10-80)"),
+    "DiabetesPedigreeFunction": (0, 2.5, "Diabetes pedigree function (0-2.5)"),
+    "Age": (10, 100, "Age in years (10-100)"),
 }
 
 # ==================== ENVIRONMENT VALIDATION ====================
@@ -107,12 +107,12 @@ def validate_health_parameter(name: str, value: float) -> Tuple[bool, Optional[s
     """Validate a single health parameter against acceptable ranges"""
     if name not in PARAMETER_RANGES:
         return False, f"Unknown parameter: {name}"
-    
+
     min_val, max_val, description = PARAMETER_RANGES[name]
-    
+
     if value < min_val or value > max_val:
-        return False, f"{name} must be between {min_val} and {max_val}. {description}"
-    
+        return False, f"{name} must be strictly between {min_val} and {max_val}. {description}"
+
     return True, None
 
 # ==================== ENVIRONMENT VALIDATION STARTUP ====================

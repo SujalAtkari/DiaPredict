@@ -37,14 +37,15 @@
     {% block extra_js %}{% endblock %}
 
     <script>
-        // Auto-close toasts after 5 seconds
+        // Auto-close toasts based on category (errors close faster)
         document.addEventListener('DOMContentLoaded', function() {
             const toasts = document.querySelectorAll('.toast');
             toasts.forEach(toast => {
+                const closeDelay = toast.classList.contains('toast-error') ? 3000 : 5000;
                 setTimeout(() => {
                     toast.style.animation = 'slideOut 0.3s ease forwards';
                     setTimeout(() => toast.remove(), 300);
-                }, 5000);
+                }, closeDelay);
             });
         });
 
