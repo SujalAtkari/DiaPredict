@@ -573,15 +573,15 @@
 
     function renderPredictionDetail(data) {
         const modalBody = document.getElementById('modalBody');
-        const date = new Date(data.date).toLocaleString();
+        const date = data.date;
         const predictionClass = data.outcome === 1 ? 'positive' : 'negative';
 
         let html = `
             <div class="prediction-date">
-                <i class="fas fa-calendar"></i> ${date}
+                <i class="fas fa-calendar-alt"></i> ${date}
             </div>
             <div class="prediction-result ${predictionClass}">
-                <i class="fas fa-${data.outcome === 1 ? 'exclamation-triangle' : 'check-circle'}"></i>
+                <i class="fas fa-${data.outcome === 1 ? 'exclamation-circle' : 'check-circle'}"></i>
                 ${data.prediction}
             </div>
         `;
@@ -589,58 +589,64 @@
         // Risk Factors Section
         if (data.risk_factors && data.risk_factors.length > 0) {
             html += `<div class="risk-section">
-                <div class="risk-section-title">⚠️ Risk Factors Identified</div>`;
+                <div class="risk-section-title">⚠️ High Risk Factors (Contributing to Diabetes Risk)</div>`;
 
             data.risk_factors.forEach(factor => {
                 html += `
-                    <div class="risk-factor">
+                    <div class="risk-factor" style="border-left-color: #ef4444;">
                         <div class="risk-factor-header">
                             <span class="risk-factor-name">${factor.field}</span>
-                            <span class="risk-factor-value">${factor.value} ${factor.unit}</span>
+                            <span class="risk-factor-value" style="background: #fee2e2; color: #991b1b;">${factor.value} ${factor.unit}</span>
                         </div>
                         <div class="risk-factor-reason">${factor.reason}</div>
-                        <div style="font-size: 12px; color: #999; margin-top: 6px;">
-                            Threshold: ${factor.threshold} ${factor.unit}
+                        <div style="font-size: 12px; color: #666; margin-top: 6px;">
+                            <strong>Threshold:</strong> ${factor.threshold} ${factor.unit} | <strong>Your Value:</strong> ${factor.value} ${factor.unit}
                         </div>
                     </div>
                 `;
             });
 
             html += `</div>`;
-        } else {
-            html += `<div class="risk-section">
-                <div class="no-risk-factors"><i class="fas fa-check-circle"></i> All health parameters are within normal ranges</div>
-            </div>`;
         }
 
-        // All Values Section
-        html += `<div class="risk-section">
-            <div class="risk-section-title">📊 All Health Parameters</div>
-            <div class="all-values">
-                <div class="values-grid">`;
+        // Normal Factors Section
+        if (data.normal_factors && data.normal_factors.length > 0) {
+            html += `<div class="risk-section">
+                <div class="risk-section-title">✅ Normal Parameters (Healthy Range)</div>`;
 
-        const params = [
-            { label: 'Pregnancies', key: 'Pregnancies', unit: '' },
-            { label: 'Glucose', key: 'Glucose', unit: 'mg/dL' },
-            { label: 'Blood Pressure', key: 'BloodPressure', unit: 'mmHg' },
-            { label: 'Skin Thickness', key: 'SkinThickness', unit: 'mm' },
-            { label: 'Insulin', key: 'Insulin', unit: 'mU/mL' },
-            { label: 'BMI', key: 'BMI', unit: 'kg/m²' },
-            { label: 'Diabetes Pedigree', key: 'DiabetesPedigreeFunction', unit: '' },
-            { label: 'Age', key: 'Age', unit: 'yrs' }
-        ];
+            data.normal_factors.forEach(factor => {
+                html += `
+                    <div class="risk-factor" style="border-left-color: #10b981; background: #f0fdf4;">
+                        <div class="risk-factor-header">
+                            <span class="risk-factor-name">${factor.field}</span>
+                            <span class="risk-factor-value" style="background: #d1fae5; color: #065f46;">${factor.value} ${factor.unit}</span>
+                        </div>
+                        <div class="risk-factor-reason" style="color: #047857;">${factor.reason}</div>
+                        <div style="font-size: 12px; color: #666; margin-top: 6px;">
+                            <strong>Normal Range:</strong> ${factor.normal_range} | <strong>Your Value:</strong> ${factor.value} ${factor.unit}
+                        </div>
+                    </div>
+                `;
+            });
 
-        params.forEach(param => {
-            const value = data.all_values[param.key];
-            html += `
-                <div class="value-item">
-                    <div class="value-label">${param.label}</div>
-                    <div class="value-display">${value} ${param.unit}</div>
+            html += `</div>`;
+        }
+
+        // Summary Section
+        html += `<div class="risk-section" style="background: #f3f4f6; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">
+            <div style="font-weight: 600; color: #333; margin-bottom: 8px;">📊 Summary</div>
+            <div style="color: #555; font-size: 14px; line-height: 1.6;">
+                <div><strong>Total Parameters Analyzed:</strong> 8</div>
+                <div><strong>Risk Factors Found:</strong> ${data.risk_factors.length}</div>
+                <div><strong>Normal Parameters:</strong> ${data.normal_factors.length}</div>
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #d1d5db;">
+                    <strong>Overall Assessment:</strong>
+                    <span style="color: ${data.outcome === 1 ? '#dc2626' : '#059669'};">
+                        ${data.outcome === 1 ? 'High Risk - Medical consultation recommended' : 'Low Risk - Continue healthy lifestyle'}
+                    </span>
                 </div>
-            `;
-        });
-
-        html += `</div></div></div>`;
+            </div>
+        </div>`;
 
         modalBody.innerHTML = html;
     }

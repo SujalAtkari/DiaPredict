@@ -606,7 +606,7 @@ def prediction_detail(pred_id: int) -> Union[Dict, tuple[Dict, int]]:
 
         if not prediction:
             logger.warning(f"Prediction {pred_id} not found for user {current_user.userid}")
-            return {'error': 'Prediction not found'}, 404
+            return jsonify({'error': 'Prediction not found'}), 404
 
         # Extract values
         values = {
@@ -620,103 +620,120 @@ def prediction_detail(pred_id: int) -> Union[Dict, tuple[Dict, int]]:
             'Age': prediction.age,
         }
 
-        # Analyze which fields caused high risk
-        risk_factors = []
-
-        if values['BMI'] > 30:
-            risk_factors.append({
-                'field': 'BMI',
-                'value': round(values['BMI'], 1),
-                'unit': 'kg/m²',
-                'threshold': 30,
-                'reason': 'Obesity indicator. BMI over 30 significantly increases diabetes risk.'
-            })
-
-        if values['Glucose'] > 140:
-            risk_factors.append({
+        # Define all parameters with their thresholds and information
+        all_parameters = [
+            {
                 'field': 'Glucose',
-                'value': round(values['Glucose'], 1),
+                'value': values['Glucose'],
                 'unit': 'mg/dL',
                 'threshold': 140,
-                'reason': 'High blood glucose levels detected. Elevated fasting glucose is a major diabetes indicator.'
-            })
-
-        if values['BloodPressure'] > 90:
-            risk_factors.append({
+                'normal_range': '70-140',
+                'reason': 'High blood glucose levels detected. Elevated fasting glucose is a major diabetes indicator.',
+                'normal_reason': 'Normal fasting glucose level indicates good blood sugar control.'
+            },
+            {
                 'field': 'Blood Pressure',
-                'value': round(values['BloodPressure'], 1),
+                'value': values['BloodPressure'],
                 'unit': 'mmHg',
                 'threshold': 90,
-                'reason': 'Elevated diastolic blood pressure. Hypertension is linked to diabetes complications.'
-            })
-
-        if values['Insulin'] > 166:
-            risk_factors.append({
+                'normal_range': '< 90',
+                'reason': 'Elevated diastolic blood pressure. Hypertension is linked to diabetes complications.',
+                'normal_reason': 'Normal blood pressure indicates good cardiovascular health.'
+            },
+            {
                 'field': 'Insulin',
-                'value': round(values['Insulin'], 1),
+                'value': values['Insulin'],
                 'unit': 'mU/mL',
                 'threshold': 166,
-                'reason': 'High serum insulin levels indicate insulin resistance, a precursor to diabetes.'
-            })
-
-        if values['Pregnancies'] > 5:
-            risk_factors.append({
-                'field': 'Pregnancies',
-                'value': round(values['Pregnancies'], 1),
-                'unit': 'count',
-                'threshold': 5,
-                'reason': 'Multiple pregnancies increase gestational diabetes risk and diabetes susceptibility.'
-            })
-
-        if values['Age'] > 45:
-            risk_factors.append({
-                'field': 'Age',
-                'value': round(values['Age'], 1),
-                'unit': 'years',
-                'threshold': 45,
-                'reason': 'Age over 45 is associated with increased diabetes risk due to metabolic changes.'
-            })
-
-        if values['DiabetesPedigreeFunction'] > 0.5:
-            risk_factors.append({
-                'field': 'Diabetes Pedigree Function',
-                'value': round(values['DiabetesPedigreeFunction'], 3),
-                'unit': 'score',
-                'threshold': 0.5,
-                'reason': 'High family history score suggests genetic predisposition to diabetes.'
-            })
-
-        if values['SkinThickness'] > 30:
-            risk_factors.append({
+                'normal_range': '< 166',
+                'reason': 'High serum insulin levels indicate insulin resistance, a precursor to diabetes.',
+                'normal_reason': 'Normal insulin level indicates adequate insulin sensitivity.'
+            },
+            {
+                'field': 'BMI',
+                'value': values['BMI'],
+                'unit': 'kg/m²',
+                'threshold': 30,
+                'normal_range': '18.5-29.9',
+                'reason': 'Obesity indicator. BMI over 30 significantly increases diabetes risk.',
+                'normal_reason': 'Healthy BMI indicates good weight management.'
+            },
+            {
                 'field': 'Skin Thickness',
-                'value': round(values['SkinThickness'], 1),
+                'value': values['SkinThickness'],
                 'unit': 'mm',
                 'threshold': 30,
-                'reason': 'Elevated skin thickness indicates subcutaneous fat accumulation, linked to insulin resistance.'
-            })
+                'normal_range': '< 30',
+                'reason': 'Elevated skin thickness indicates subcutaneous fat accumulation, linked to insulin resistance.',
+                'normal_reason': 'Normal skin thickness suggests healthy body composition.'
+            },
+            {
+                'field': 'Pregnancies',
+                'value': values['Pregnancies'],
+                'unit': 'count',
+                'threshold': 5,
+                'normal_range': '0-5',
+                'reason': 'Multiple pregnancies increase gestational diabetes risk and diabetes susceptibility.',
+                'normal_reason': 'Number of pregnancies within normal range.'
+            },
+            {
+                'field': 'Age',
+                'value': values['Age'],
+                'unit': 'years',
+                'threshold': 45,
+                'normal_range': '< 45',
+                'reason': 'Age over 45 is associated with increased diabetes risk due to metabolic changes.',
+                'normal_reason': 'Age below 45 reduces age-related diabetes risk.'
+            },
+            {
+                'field': 'Diabetes Pedigree Function',
+                'value': values['DiabetesPedigreeFunction'],
+                'unit': 'score',
+                'threshold': 0.5,
+                'normal_range': '< 0.5',
+                'reason': 'High family history score suggests genetic predisposition to diabetes.',
+                'normal_reason': 'Lower family history score indicates lower genetic risk.'
+            }
+        ]
+
+        # Categorize parameters as risk factors or normal
+        risk_factors = []
+        normal_factors = []
+
+        for param in all_parameters:
+            rounded_value = round(param['value'], 3) if isinstance(param['value'], float) else param['value']
+
+            is_risky = param['value'] > param['threshold']
+
+            param_data = {
+                'field': param['field'],
+                'value': rounded_value,
+                'unit': param['unit'],
+                'threshold': param['threshold'],
+                'normal_range': param['normal_range'],
+                'reason': param['reason'] if is_risky else param['normal_reason'],
+                'status': 'High Risk' if is_risky else 'Normal'
+            }
+
+            if is_risky:
+                risk_factors.append(param_data)
+            else:
+                normal_factors.append(param_data)
 
         return jsonify({
             'id': prediction.id,
-            'date': prediction.created_at.isoformat() if prediction.created_at else None,
+            'date': prediction.created_at.strftime('%Y-%m-%d %H:%M:%S') if prediction.created_at else 'N/A',
             'prediction': 'Positive (High Risk)' if prediction.outcome == 1 else 'Negative (Low Risk)',
             'outcome': prediction.outcome,
             'risk_factors': risk_factors,
-            'all_values': {
-                'Pregnancies': round(values['Pregnancies'], 1),
-                'Glucose': round(values['Glucose'], 1),
-                'BloodPressure': round(values['BloodPressure'], 1),
-                'SkinThickness': round(values['SkinThickness'], 1),
-                'Insulin': round(values['Insulin'], 1),
-                'BMI': round(values['BMI'], 1),
-                'DiabetesPedigreeFunction': round(values['DiabetesPedigreeFunction'], 3),
-                'Age': round(values['Age'], 1),
-            },
+            'normal_factors': normal_factors,
+            'all_parameters': all_parameters,
             'has_risk_factors': len(risk_factors) > 0
         }), 200
 
     except Exception as e:
         logger.error(f"Prediction detail error for user {current_user.userid}: {str(e)}", exc_info=True)
-        return {'error': 'An error occurred'}, 500
+        return jsonify({'error': 'An error occurred', 'details': str(e)}), 500
 
 @app.route('/logout')
 @login_required
