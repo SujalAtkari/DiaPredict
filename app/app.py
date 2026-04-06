@@ -597,6 +597,127 @@ def predictions_history() -> Union[str, Response]:
         flash("Error loading predictions history.", "error")
         return redirect(url_for('dashboard'))
 
+@app.route('/api/prediction/<int:pred_id>')
+@login_required
+def prediction_detail(pred_id: int) -> Union[Dict, tuple[Dict, int]]:
+    """API endpoint to get detailed risk analysis for a specific prediction"""
+    try:
+        prediction = Prediction.query.filter_by(id=pred_id, userid=current_user.userid).first()
+
+        if not prediction:
+            logger.warning(f"Prediction {pred_id} not found for user {current_user.userid}")
+            return {'error': 'Prediction not found'}, 404
+
+        # Extract values
+        values = {
+            'Pregnancies': prediction.pregnancies,
+            'Glucose': prediction.glucose,
+            'BloodPressure': prediction.blood_pressure,
+            'SkinThickness': prediction.skin_thickness,
+            'Insulin': prediction.insulin,
+            'BMI': prediction.bmi,
+            'DiabetesPedigreeFunction': prediction.diabetes_pedigree_function,
+            'Age': prediction.age,
+        }
+
+        # Analyze which fields caused high risk
+        risk_factors = []
+
+        if values['BMI'] > 30:
+            risk_factors.append({
+                'field': 'BMI',
+                'value': round(values['BMI'], 1),
+                'unit': 'kg/m²',
+                'threshold': 30,
+                'reason': 'Obesity indicator. BMI over 30 significantly increases diabetes risk.'
+            })
+
+        if values['Glucose'] > 140:
+            risk_factors.append({
+                'field': 'Glucose',
+                'value': round(values['Glucose'], 1),
+                'unit': 'mg/dL',
+                'threshold': 140,
+                'reason': 'High blood glucose levels detected. Elevated fasting glucose is a major diabetes indicator.'
+            })
+
+        if values['BloodPressure'] > 90:
+            risk_factors.append({
+                'field': 'Blood Pressure',
+                'value': round(values['BloodPressure'], 1),
+                'unit': 'mmHg',
+                'threshold': 90,
+                'reason': 'Elevated diastolic blood pressure. Hypertension is linked to diabetes complications.'
+            })
+
+        if values['Insulin'] > 166:
+            risk_factors.append({
+                'field': 'Insulin',
+                'value': round(values['Insulin'], 1),
+                'unit': 'mU/mL',
+                'threshold': 166,
+                'reason': 'High serum insulin levels indicate insulin resistance, a precursor to diabetes.'
+            })
+
+        if values['Pregnancies'] > 5:
+            risk_factors.append({
+                'field': 'Pregnancies',
+                'value': round(values['Pregnancies'], 1),
+                'unit': 'count',
+                'threshold': 5,
+                'reason': 'Multiple pregnancies increase gestational diabetes risk and diabetes susceptibility.'
+            })
+
+        if values['Age'] > 45:
+            risk_factors.append({
+                'field': 'Age',
+                'value': round(values['Age'], 1),
+                'unit': 'years',
+                'threshold': 45,
+                'reason': 'Age over 45 is associated with increased diabetes risk due to metabolic changes.'
+            })
+
+        if values['DiabetesPedigreeFunction'] > 0.5:
+            risk_factors.append({
+                'field': 'Diabetes Pedigree Function',
+                'value': round(values['DiabetesPedigreeFunction'], 3),
+                'unit': 'score',
+                'threshold': 0.5,
+                'reason': 'High family history score suggests genetic predisposition to diabetes.'
+            })
+
+        if values['SkinThickness'] > 30:
+            risk_factors.append({
+                'field': 'Skin Thickness',
+                'value': round(values['SkinThickness'], 1),
+                'unit': 'mm',
+                'threshold': 30,
+                'reason': 'Elevated skin thickness indicates subcutaneous fat accumulation, linked to insulin resistance.'
+            })
+
+        return jsonify({
+            'id': prediction.id,
+            'date': prediction.created_at.isoformat() if prediction.created_at else None,
+            'prediction': 'Positive (High Risk)' if prediction.outcome == 1 else 'Negative (Low Risk)',
+            'outcome': prediction.outcome,
+            'risk_factors': risk_factors,
+            'all_values': {
+                'Pregnancies': round(values['Pregnancies'], 1),
+                'Glucose': round(values['Glucose'], 1),
+                'BloodPressure': round(values['BloodPressure'], 1),
+                'SkinThickness': round(values['SkinThickness'], 1),
+                'Insulin': round(values['Insulin'], 1),
+                'BMI': round(values['BMI'], 1),
+                'DiabetesPedigreeFunction': round(values['DiabetesPedigreeFunction'], 3),
+                'Age': round(values['Age'], 1),
+            },
+            'has_risk_factors': len(risk_factors) > 0
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Prediction detail error for user {current_user.userid}: {str(e)}", exc_info=True)
+        return {'error': 'An error occurred'}, 500
+
 @app.route('/logout')
 @login_required
 def logout() -> Response:

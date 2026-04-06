@@ -13,3 +13,4 @@ secure==0.3.0
 cryptography
 werkzeug>=2.0.0
 ratelimit==2.2.1
+pymysql
